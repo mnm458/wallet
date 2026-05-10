@@ -2,8 +2,9 @@
 
 use jsonrpsee::{
     server::{RpcServiceBuilder, Server},
-    tracing::info,
+    tracing::{info, warn},
 };
+use std::path::PathBuf;
 use tokio::task::JoinHandle;
 
 use crate::{
@@ -25,6 +26,7 @@ mod error;
 pub(crate) use error::LegacyCode;
 
 pub(crate) mod authorization;
+pub(crate) mod cookie;
 mod http_request_compatibility;
 mod rpc_call_compatibility;
 
@@ -32,6 +34,7 @@ type ServerTask = JoinHandle<Result<(), Error>>;
 
 pub(crate) async fn spawn(
     config: RpcSection,
+    datadir: PathBuf,
     wallet: Database,
     #[cfg(zallet_build = "wallet")] keystore: KeyStore,
     chain: Chain,
@@ -52,9 +55,17 @@ pub(crate) async fn spawn(
 
     let timeout = config.timeout();
 
+    let has_cookie_user = config.auth.iter().any(|a| a.user == cookie::COOKIE_USER);
+    let cookie = if has_cookie_user {
+        warn!("Configured user conflicts with cookie auth username, skipping cookie generation");
+        None
+    } else {
+        Some(cookie::generate_cookie(&datadir)?)
+    };
+
     let http_middleware = tower::ServiceBuilder::new()
         .layer(
-            authorization::AuthorizationLayer::new(config.auth)
+            authorization::AuthorizationLayer::new(config.auth, cookie)
                 .map_err(|()| ErrorKind::Init.context(fl!("err-init-rpc-auth-invalid")))?,
         )
         .layer(http_request_compatibility::HttpRequestMiddlewareLayer::new())

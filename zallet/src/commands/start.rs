@@ -6,7 +6,10 @@ use tokio::{pin, select};
 use crate::{
     cli::StartCmd,
     commands::AsyncRunnable,
-    components::{chain::Chain, database::Database, json_rpc::JsonRpc, sync::WalletSync},
+    components::{
+        chain::Chain, database::Database, json_rpc::JsonRpc, json_rpc::server::cookie,
+        sync::WalletSync,
+    },
     config::ZalletConfig,
     error::Error,
     fl,
@@ -146,6 +149,9 @@ impl AsyncRunnable for StartCmd {
         wallet_sync_data_requests_task_handle.abort();
 
         info!("All tasks have been asked to stop, waiting for remaining tasks to finish");
+
+        // Clean up the cookie file.
+        cookie::delete_cookie(config.datadir());
 
         res
     }
