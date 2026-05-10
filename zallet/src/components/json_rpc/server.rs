@@ -56,11 +56,12 @@ pub(crate) async fn spawn(
     let timeout = config.timeout();
 
     let has_cookie_user = config.auth.iter().any(|a| a.user == cookie::COOKIE_USER);
-    let cookie = if has_cookie_user {
+    let (cookie, _cookie_guard) = if has_cookie_user {
         warn!("Configured user conflicts with cookie auth username, skipping cookie generation");
-        None
+        (None, None)
     } else {
-        Some(cookie::generate_cookie(&datadir)?)
+        let (user, hash, guard) = cookie::generate_cookie(&datadir)?;
+        (Some((user, hash)), Some(guard))
     };
 
     let http_middleware = tower::ServiceBuilder::new()
@@ -95,6 +96,9 @@ pub(crate) async fn spawn(
         .map_err(|e| ErrorKind::Init.context(e))?;
 
     let server_task = crate::spawn!("JSON-RPC server", async move {
+        // Hold the cookie guard until the server stops (or the task is cancelled).
+        // When dropped, it deletes the cookie file.
+        let _cookie_guard = _cookie_guard;
         server_instance.start(rpc_module).stopped().await;
         Ok(())
     });
