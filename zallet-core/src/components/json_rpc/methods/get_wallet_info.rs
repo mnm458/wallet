@@ -7,7 +7,10 @@ use serde::Serialize;
 use zcash_protocol::value::Zatoshis;
 
 use crate::components::{
-    json_rpc::utils::{JsonZec, value_from_zatoshis},
+    json_rpc::{
+        server::LegacyCode,
+        utils::{JsonZec, value_from_zatoshis},
+    },
     keystore::KeyStore,
 };
 
@@ -55,13 +58,44 @@ pub(crate) struct GetWalletInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     unlocked_until: Option<u64>,
 
-    /// The BLAKE2b-256 hash of the HD seed derived from the wallet's emergency recovery phrase.
-    mnemonic_seedfp: String,
+    /// The ZIP 32 seed fingerprint of the wallet's mnemonic phrase.
+    ///
+    /// Omitted if the wallet holds no mnemonic phrases, as in `zcashd`.
+    ///
+    /// A Zallet wallet may hold any number of phrases, which this `zcashd`-inherited
+    /// field cannot represent. It is the fingerprint when the wallet holds exactly one,
+    /// and otherwise a sentence saying how many it holds. Use `z_listaccounts` to learn
+    /// which phrase an individual account derives from.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mnemonic_seedfp: Option<String>,
 }
 
 pub(crate) async fn call(keystore: &KeyStore) -> Response {
-    // https://github.com/zcash/zallet/issues/55
+    // https://github.com/zcash/zallet/issues/620
     warn!("TODO: Implement getwalletinfo");
+
+    let seed_fps = keystore
+        .list_seed_fingerprints()
+        .await
+        .map_err(|e| LegacyCode::Database.with_message(e.to_string()))?
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    // TODO: Report several seed fingerprints properly instead of describing them in
+    //       prose. `zcashd` had at most one mnemonic phrase per wallet, so this field is
+    //       shaped to hold one fingerprint; Zallet supports any number, and a caller
+    //       whose wallet holds several currently gets a sentence where it expects a
+    //       fingerprint. Replacing that case needs a field that can carry a list.
+    let mnemonic_seedfp = match seed_fps.as_slice() {
+        [seed_fp] => Some(seed_fp.to_string()),
+        // `zcashd` omitted this field when the wallet had no mnemonic, rather than
+        // reporting a placeholder; a wallet with no phrases has no fingerprint to give.
+        [] => None,
+        several => Some(format!(
+            "This wallet holds {} mnemonic phrases",
+            several.len()
+        )),
+    };
 
     let unlocked_until = if keystore.uses_encrypted_identities() {
         Some(
@@ -86,6 +120,6 @@ pub(crate) async fn call(keystore: &KeyStore) -> Response {
         keypoololdest: 0,
         keypoolsize: 0,
         unlocked_until,
-        mnemonic_seedfp: "TODO".into(),
+        mnemonic_seedfp,
     })
 }

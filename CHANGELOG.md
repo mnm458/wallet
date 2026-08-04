@@ -130,6 +130,20 @@ be considered breaking changes.
   through an authenticated, encrypted tunnel such as SSH port forwarding or a
   VPN. Previously any bind address was accepted without a warning.
 
+- `getwalletinfo`’s `mnemonic_seedfp` field now reports the wallet’s ZIP 32 seed
+  fingerprint, instead of the placeholder string `"TODO"`. It is omitted when
+  the wallet holds no mnemonic phrases, matching `zcashd`, which emitted the
+  field only when its wallet had a mnemonic.
+
+  A Zallet wallet may hold any number of phrases, which this `zcashd`-inherited
+  field cannot represent, so a wallet holding several gets a sentence saying how
+  many instead of a fingerprint. Use `z_listaccounts` to learn which phrase an
+  individual account derives from.
+
+  Note that Zallet reports the fingerprint in its ZIP 32 bech32m encoding
+  (`zip32seedfp1…`), as `z_listaccounts` already does, whereas `zcashd` reported
+  the `uint256` hex form.
+
 ### Fixed
 
 - `migrate-zcashd-wallet` now passes a fallback network to the wallet parser
