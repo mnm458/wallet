@@ -56,6 +56,11 @@ Changes to response:
 - Transparent addresses for which we have BIP 44 derivation information are now
   listed in a new `derived_transparent` field (an array of objects) instead of
   the `transparent` field.
+- The `seedfp` field of each `unified` group is the ZIP 32 seed fingerprint in
+  its bech32m encoding (`zip32seedfp1…`), whereas `zcashd` reported the
+  `uint256` hex form. Zallet accepts both encodings wherever a fingerprint is
+  given as a parameter, so this affects readers only. The `seedfp` field of each
+  `derived_transparent` group uses the same encoding.
 
 ### `z_exportviewingkey`
 
