@@ -582,9 +582,22 @@ impl MigrateZcashdWalletCmd {
         // up, so that a failure here never leaves committed accounts half-configured.
         // The backup reminder is printed before propagating any error from these
         // steps, as the minted-seed notice above refers to it.
-        let post_import = register_watch_pubkeys(&mut db_data, &document, &report, exposure_height)
-            .and_then(|()| {
-                expose_spending_key_addresses(&mut db_data, &document, &report, exposure_height)
+        let post_import = derived_transparent_receivers(&mut db_data, &report)
+            .and_then(|derived| {
+                register_watch_pubkeys(
+                    &mut db_data,
+                    &document,
+                    &report,
+                    exposure_height,
+                    &derived,
+                )?;
+                expose_spending_key_addresses(
+                    &mut db_data,
+                    &document,
+                    &report,
+                    exposure_height,
+                    &derived,
+                )
             })
             .and_then(|()| {
                 let document_account_count = document
@@ -639,6 +652,27 @@ fn derive_regtest_activations(params: &impl Parameters) -> zewif_zcashd::Regtest
     })
 }
 
+/// Collects the derived transparent receivers of every imported account.
+///
+/// Exposure marking excludes these: derived receivers keep the importer's
+/// gap-inferred exposure, and force-exposing one beyond the gap could hide
+/// funded addresses from seed recovery.
+fn derived_transparent_receivers(
+    db_data: &mut DbHandle,
+    report: &ZewifImportReport,
+) -> Result<HashSet<TransparentAddress>, MigrateError> {
+    let mut derived = HashSet::new();
+    for account in &report.imported_accounts {
+        derived.extend(
+            db_data
+                .get_transparent_receivers(account.account_uuid, true, false)
+                .map_err(MigrateError::Database)?
+                .into_keys(),
+        );
+    }
+    Ok(derived)
+}
+
 /// Registers watch-only transparent pubkeys (from zcashd's `importpubkey`) with the
 /// accounts whose address lists carry them, exposing their addresses as of
 /// `exposure_height`.
@@ -650,6 +684,7 @@ fn register_watch_pubkeys(
     document: &zewif::Zewif,
     report: &ZewifImportReport,
     exposure_height: BlockHeight,
+    derived_receivers: &HashSet<TransparentAddress>,
 ) -> Result<(), MigrateError> {
     let accounts_by_name: HashMap<&str, zcash_client_sqlite::AccountUuid> = report
         .imported_accounts
@@ -684,16 +719,22 @@ fn register_watch_pubkeys(
                     watch_pubkeys.len(),
                     account.name(),
                 );
+                // A watched pubkey may coincide with one of the wallet's own derived
+                // receivers; those keep the importer's gap-inferred exposure.
                 let to_expose: Vec<(TransparentAddress, BlockHeight)> = watch_pubkeys
                     .iter()
-                    .map(|pk| (TransparentAddress::from_pubkey(pk), exposure_height))
+                    .map(TransparentAddress::from_pubkey)
+                    .filter(|address| !derived_receivers.contains(address))
+                    .map(|address| (address, exposure_height))
                     .collect();
                 db_data
                     .import_standalone_transparent_pubkeys(*account_uuid, watch_pubkeys.into_iter())
                     .map_err(MigrateError::Database)?;
-                db_data
-                    .mark_transparent_addresses_exposed(&to_expose)
-                    .map_err(MigrateError::Database)?;
+                if !to_expose.is_empty() {
+                    db_data
+                        .mark_transparent_addresses_exposed(&to_expose)
+                        .map_err(MigrateError::Database)?;
+                }
             }
         }
     }
@@ -763,22 +804,14 @@ fn expose_spending_key_addresses(
     document: &zewif::Zewif,
     report: &ZewifImportReport,
     exposure_height: BlockHeight,
+    derived_receivers: &HashSet<TransparentAddress>,
 ) -> Result<(), MigrateError> {
     let Some(zewif::Secrets::Plain(store)) = document.secrets() else {
         return Ok(());
     };
     let params = *db_data.params();
-    let mut derived_receivers = HashSet::new();
-    for account in &report.imported_accounts {
-        derived_receivers.extend(
-            db_data
-                .get_transparent_receivers(account.account_uuid, true, false)
-                .map_err(MigrateError::Database)?
-                .into_keys(),
-        );
-    }
     let to_expose: Vec<(TransparentAddress, BlockHeight)> =
-        registered_spending_key_addresses(store, report, &params, &derived_receivers)
+        registered_spending_key_addresses(store, report, &params, derived_receivers)
             .into_iter()
             .map(|address| (address, exposure_height))
             .collect();
