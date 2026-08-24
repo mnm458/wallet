@@ -27,6 +27,8 @@ mod repair;
 mod start;
 
 #[cfg(zallet_build = "wallet")]
+mod confirm_backup;
+#[cfg(zallet_build = "wallet")]
 mod export_mnemonic;
 #[cfg(zallet_build = "wallet")]
 mod generate_encryption_identity;
@@ -42,6 +44,8 @@ mod init_wallet_encryption;
 mod migrate_zcash_conf;
 #[cfg(all(zallet_build = "wallet", feature = "zcashd-import"))]
 mod migrate_zcashd_wallet;
+#[cfg(zallet_build = "wallet")]
+mod seed_selection;
 
 #[cfg(feature = "rpc-cli")]
 pub(crate) mod rpc_cli;
@@ -118,6 +122,34 @@ pub(crate) fn resolve_config_path(datadir: &Path, config_override: Option<&Path>
     } else {
         resolve_datadir_path(datadir, config_buf)
     }
+}
+
+/// Resolves the `-o/--output` flag of the commands that write a Zallet config file
+/// (`example-config`, `migrate-zcash-conf`).
+///
+/// Returns the file path to write to, or `None` for standard output:
+/// - When the flag is omitted, the default Zallet config file path for `datadir` is
+///   used, matching the path `zallet` loads its config from at startup.
+/// - The value `-` selects standard output.
+/// - Any other value is used as given (relative paths resolve against the current
+///   working directory, not `datadir`).
+pub(crate) fn resolve_output_target(datadir: &Path, output: Option<&str>) -> Option<PathBuf> {
+    match output {
+        None => Some(resolve_config_path(datadir, None)),
+        Some("-") => None,
+        Some(path) => Some(PathBuf::from(path)),
+    }
+}
+
+/// Whether a config-writing command may overwrite an existing file at its output
+/// target.
+///
+/// `--force` consents to overwriting only a target the user named explicitly with
+/// `-o`. When the output path is inferred (the flag was omitted), an existing file
+/// is never overwritten: the inferred path is the wallet's live configuration, and
+/// a stray `--force` must not clobber it.
+pub(crate) fn overwrite_allowed(force: bool, named_explicitly: bool) -> bool {
+    force && named_explicitly
 }
 
 impl EntryPoint {
@@ -273,6 +305,42 @@ mod tests {
     }
 
     #[test]
+    fn resolve_output_target_defaults_to_config_path() {
+        let datadir = Path::new("/data");
+        assert_eq!(
+            resolve_output_target(datadir, None),
+            Some(Path::new("/data").join(CONFIG_FILE)),
+        );
+    }
+
+    #[test]
+    fn resolve_output_target_dash_is_stdout() {
+        assert_eq!(resolve_output_target(Path::new("/data"), Some("-")), None);
+    }
+
+    #[test]
+    fn resolve_output_target_explicit_path_is_used_as_given() {
+        assert_eq!(
+            resolve_output_target(Path::new("/data"), Some("custom.toml")),
+            Some(PathBuf::from("custom.toml")),
+        );
+        assert_eq!(
+            resolve_output_target(Path::new("/data"), Some("/etc/zallet.toml")),
+            Some(PathBuf::from("/etc/zallet.toml")),
+        );
+    }
+
+    /// `--force` consents to overwriting only an explicitly named output; the
+    /// inferred default config path is never overwritten.
+    #[test]
+    fn overwrite_requires_both_force_and_an_explicit_output() {
+        assert!(overwrite_allowed(true, true));
+        assert!(!overwrite_allowed(true, false));
+        assert!(!overwrite_allowed(false, true));
+        assert!(!overwrite_allowed(false, false));
+    }
+
+    #[test]
     fn resolve_config_path_relative_override_is_prefixed_by_datadir() {
         let datadir = Path::new("/data");
         assert_eq!(
@@ -292,5 +360,61 @@ mod tests {
             resolve_config_path(datadir, Some(Path::new("/etc/zallet/zallet.toml"))),
             PathBuf::from("/etc/zallet/zallet.toml"),
         );
+    }
+
+    /// The lock is exclusive while its guard is alive, and released once the guard is
+    /// dropped. Commands bind it as `let _lock = ...` for exactly this reason; binding
+    /// it as `let _ = ...` would drop it immediately and silently lock nothing.
+    #[test]
+    fn datadir_lock_is_released_when_its_guard_is_dropped() {
+        let datadir = tempfile::tempdir().expect("creates tempdir");
+
+        let guard = lock_datadir(datadir.path()).expect("locks an unlocked datadir");
+        assert!(
+            lock_datadir(datadir.path()).is_err(),
+            "the datadir must not be lockable while a guard is held",
+        );
+
+        drop(guard);
+        lock_datadir(datadir.path()).expect("the datadir is lockable again once released");
+    }
+
+    /// A command that takes the lock and then fails must not leave the datadir locked;
+    /// `migrate-zcashd-wallet` returns early on several paths (e.g. the beta-code guard)
+    /// after acquiring it.
+    #[test]
+    fn datadir_lock_is_released_when_its_holder_returns_early() {
+        let datadir = tempfile::tempdir().expect("creates tempdir");
+
+        fn locks_then_fails(datadir: &Path) -> Result<(), Error> {
+            let _lock = lock_datadir(datadir)?;
+            Err(ErrorKind::Generic
+                .context("simulated command failure".to_owned())
+                .into())
+        }
+
+        assert!(locks_then_fails(datadir.path()).is_err());
+        lock_datadir(datadir.path()).expect("the early return released the lock");
+    }
+
+    /// Dropping a cancelled future drops the locals it is holding, so a command
+    /// interrupted mid-migration (Ctrl-C, runtime shutdown) releases the lock too.
+    #[tokio::test]
+    async fn datadir_lock_is_released_when_its_holding_future_is_cancelled() {
+        let datadir = tempfile::tempdir().expect("creates tempdir");
+
+        let holds_lock_forever = async {
+            let _lock = lock_datadir(datadir.path()).expect("locks an unlocked datadir");
+            std::future::pending::<()>().await;
+        };
+
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(50), holds_lock_forever)
+                .await
+                .is_err(),
+            "the future must still be holding the lock when it is cancelled",
+        );
+
+        lock_datadir(datadir.path()).expect("cancelling the holder released the lock");
     }
 }

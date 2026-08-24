@@ -33,6 +33,8 @@
 -legacy_pool_seed_fingerprint = legacy_pool_seed_fingerprint
 -zallet_toml = zallet.toml
 
+-cfg-keystore-require-backup = keystore.require_backup
+-cfg-rpc-allow-insecure-remote-bind = rpc.allow_insecure_remote_bind
 -cfg-rpc-auth = rpc.auth
 -cfg-rpc-auth-password = rpc.auth.password
 -cfg-rpc-auth-pwhash = rpc.auth.pwhash
@@ -48,6 +50,7 @@ flags-header = Options
 cmd-add-rpc-user-prompt = Enter password:
 rpc-cli-param-prompt = Enter parameter value:
 cmd-add-rpc-user-password-empty = Password must not be empty.
+cmd-add-rpc-user-reserved = The username '{$user}' is reserved for the cookie credential that {-zallet} generates at startup; choose a different username.
 cmd-add-rpc-user-instructions = Add this to your {-zallet_toml} file:
 cmd-seed-fingerprint = Seed fingerprint: {$seedfp}
 cmd-import-mnemonic-prompt = Enter mnemonic:
@@ -61,6 +64,30 @@ cmd-generate-encryption-identity-passphrase-confirm = Confirm passphrase:
 cmd-generate-encryption-identity-passphrase-mismatch = Passphrases do not match
 cmd-generate-encryption-identity-passphrase-empty = Passphrase must not be empty; an empty passphrase would leave the identity effectively unencrypted.
 cmd-generate-encryption-identity-passphrase-file-failed = Failed to read passphrase from {$path}: {$error}
+
+cmd-generate-mnemonic-confirm-backup-next =
+    This phrase exists nowhere but this wallet. Run '{-zallet} confirm-backup' to record
+    it somewhere durable; until you do, {-zallet} will not derive accounts or addresses
+    from it.
+
+cmd-confirm-backup-already-confirmed = This phrase’s backup has already been confirmed.
+cmd-confirm-backup-how-to-obtain =
+    {-zallet} never displays a recovery phrase. To confirm this one’s backup you need
+    your own decrypted copy of it:
+
+        zallet export-mnemonic --armor --seedfp {$seedfp} >mnemonic.age
+        age -d -i {$identity} mnemonic.age
+
+    Write the phrase down, including the numbering of the words, on something durable
+    that you will keep somewhere secure, and delete the decrypted copy afterwards. Then
+    read the words requested below back from what you wrote down.
+cmd-confirm-backup-word-prompt = Enter word #{$position}:{" "}
+cmd-confirm-backup-confirmed = Backup confirmed.
+cmd-confirm-backup-not-complete-backup =
+    Note that this phrase is not a complete backup of your wallet. It covers only funds
+    derived from this seed; spending keys imported into the wallet separately are not
+    included, and recovering from the phrase alone will not restore them. Keep secure
+    copies of both your wallet database and your age encryption identity file as well.
 
 cmd-migrate-wallet-passphrase-prompt = Enter the passphrase for the encrypted zcashd wallet:
 cmd-migrate-wallet-passphrase-wrong = The passphrase was incorrect; please try again.
@@ -79,7 +106,6 @@ rpc-pwhash-auth-info = Using '{-cfg-rpc-auth-pwhash}' authorization
 
 rpc-cookie-generated = Generated RPC authentication cookie {$path}
 rpc-cookie-read-failed = Failed to read cookie file: {$error}
-rpc-cookie-user-conflict = Configured user conflicts with cookie auth username, skipping cookie generation
 
 ## zallet.toml example messages
 
@@ -126,10 +152,17 @@ migrate-beta-code =
 
 migrate-config-written = {-zallet} config written to {$conf}
 
+migrate-wallet-minted-seed =
+    The {-zcashd} wallet contains no HD seed, so a new BIP 39 mnemonic seed phrase
+    has been generated for the migrated wallet. This seed phrase never existed in
+    {-zcashd}: backups of your original wallet.dat do NOT cover it or any addresses
+    that will be derived from it, so be sure to back up your new {-zallet} wallet
+    as described below.
+
 migrate-wallet-legacy-seed-fp =
-    Importing zcashd legacy account for seed fingerprint '{$seed_fp}'. If you wish to
-    enable legacy zcashd semantics for wallet RPC methods, you should set
-    '{-legacy_pool_seed_fingerprint}' to this value in '{-zallet_toml}'.",
+    The zcashd legacy account is derived from the seed with fingerprint '{$seed_fp}'.
+    If you wish to enable legacy zcashd semantics for wallet RPC methods, you should
+    set '{-legacy_pool_seed_fingerprint}' to this value in '{-zallet_toml}'.
 
 ## General errors
 
@@ -166,7 +199,27 @@ err-init-identity-not-passphrase-encrypted = {$path} is not encrypted with a pas
 err-init-path-not-utf8 = {$path} is not currently supported (not UTF-8)
 err-init-identity-not-usable = Identity file at {$path} is not usable: {$error}
 err-init-rpc-auth-invalid = Invalid '{-cfg-rpc-auth}' configuration
+err-init-rpc-auth-cookie-user-reserved =
+    The '{-cfg-rpc-auth}' username '{$user}' is reserved for the cookie credential that
+    {-zallet} generates at startup. Remove that '{-cfg-rpc-auth}' entry, or choose a
+    different username for it.
+err-init-rpc-bind-not-loopback =
+    Refusing to open the JSON-RPC endpoint on non-loopback address {$addr}: the RPC
+    interface is served over plaintext HTTP, so RPC credentials and wallet
+    passphrases would be readable by anyone on the network path. Bind to a loopback
+    address and use an authenticated, encrypted tunnel (such as SSH port forwarding
+    or a VPN) for remote access, or set '{-cfg-rpc-allow-insecure-remote-bind} = true'
+    to accept the risk.
+warn-init-rpc-bind-insecure-remote =
+    SECURITY WARNING: serving plaintext JSON-RPC on non-loopback address {$addr}
+    because '{-cfg-rpc-allow-insecure-remote-bind}' is enabled. RPC credentials and
+    wallet passphrases sent to this endpoint can be read and replayed by anyone on
+    the network path. Prefer a loopback bind plus an authenticated, encrypted tunnel
+    (such as SSH port forwarding or a VPN).
 err-config-file-not-found = Configuration file at {$path} does not exist.
+err-config-output-exists =
+    Refusing to overwrite the existing config file at {$path}. To replace it, name
+    the target explicitly: '-o {$path} --force'.
 err-config-file-invalid = Failed to parse configuration file at {$path}: {$error}
 err-init-incompatible-consensus =
     The backing full node follows consensus rules that this {-zallet} build cannot
@@ -202,9 +255,29 @@ err-keystore-recipient-indirection =
 err-keystore-key-material-mismatch =
     Decrypted key material does not match the fingerprint it is stored under. The wallet
     database is corrupted or has been tampered with.
+err-keystore-no-such-mnemonic = The wallet holds no mnemonic phrase with seed fingerprint {$seedfp}.
 err-keystore-incorrect-passphrase = The wallet passphrase entered was incorrect.
 err-keystore-timeout-too-large = The requested unlock timeout is too large.
 err-wallet-locked = Wallet is locked
+
+## Seed selection errors
+
+err-seed-selection-no-mnemonics =
+    The wallet holds no mnemonic phrases. Run '{-zallet} generate-mnemonic' or
+    '{-zallet} import-mnemonic' first.
+err-seed-selection-seedfp-required =
+    The wallet holds more than one mnemonic phrase; pass --seedfp to choose which one.
+err-seed-selection-unknown-seedfp =
+    The given seed fingerprint does not match any mnemonic phrase in the wallet.
+
+## Backup confirmation errors
+
+err-backup-not-confirmed =
+    The backup of this wallet's mnemonic phrase has not been confirmed. Run
+    '{-zallet} confirm-backup' first, or set '{-cfg-keystore-require-backup}' to false.
+err-confirm-backup-wrong-word =
+    That is not the word at this position in the phrase. The backup has NOT been
+    confirmed; check your written copy and run this command again.
 
 ## Account errors
 
@@ -405,8 +478,6 @@ err-migrate-wallet-key-data=
 err-migrate-wallet-network-mismatch =
     The {-zcashd} wallet being imported is for the '{$wallet_network}' network,
     but this {-zallet} instance is configured for '{$zallet_network}'
-err-migrate-wallet-regtest =
-    Migration of regtest wallets is not yet supported.
 err-migrate-wallet-storage =
     An database error occurred in wallet migration. This is indicative of a
     programming error; please report the following error to (TBD): '{$err}'
