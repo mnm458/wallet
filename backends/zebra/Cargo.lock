@@ -6511,7 +6511,7 @@ dependencies = [
 
 [[package]]
 name = "zallet-core"
-version = "0.1.0-beta.2"
+version = "0.1.0-beta.3"
 dependencies = [
  "abscissa_core",
  "abscissa_tokio",
@@ -6603,7 +6603,7 @@ dependencies = [
 
 [[package]]
 name = "zallet-zebra"
-version = "0.1.0-beta.2"
+version = "0.1.0-beta.3"
 dependencies = [
  "abscissa_core",
  "age",

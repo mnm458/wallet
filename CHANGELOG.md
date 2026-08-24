@@ -25,6 +25,8 @@ be considered breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-beta.3] - 2026-08-24
+
 ### Added
 
 - `zallet import-address` CLI command for importing a transparent address as
