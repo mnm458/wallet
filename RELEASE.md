@@ -14,12 +14,9 @@ Four packages ship in release lockstep under one version number:
 | `zallet-zebra` | `backends/zebra/` | Operators (Zebra backend) |
 | `zallet-zaino` | `backends/zaino/` | Operators (Zaino backend) |
 
-The three workspaces each have their own `Cargo.lock`. The four packages MUST
-carry one identical version, enforced by `utils/check-lockstep.sh` in CI. Use
+The three workspaces each have their own `Cargo.lock`. The four package's
+dependencies MUST be upgraded in lockstep, enforced by `utils/check-lockstep.sh` in CI. Use
 `utils/bump-version.sh` (not hand-edits) to bump all four at once.
-
-Prior to 1.0.0, no Semantic Versioning is followed; all releases should be
-considered breaking changes.
 
 ## Before you start
 
