@@ -20,6 +20,8 @@ should be considered breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-beta.3] - 2026-08-24
+
 ### Fixed
 
 - The chain view no longer substitutes an empty note commitment tree when

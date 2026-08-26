@@ -25,6 +25,8 @@ be considered breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-beta.3] - 2026-08-24
+
 ### Added
 
 - `z_listunspent` transparent coinbase outputs now include a `blockstomaturity`
