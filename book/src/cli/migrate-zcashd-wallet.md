@@ -95,8 +95,16 @@ in-memory [ZeWIF] (Zcash Wallet Interchange Format) document, connect to the
 backing full node (to obtain necessary chain information for setting up wallet
 birthdays), and import the document: Zallet accounts are created corresponding
 to the structure of the `zcashd` wallet, spending key material is stored in the
-Zallet keystore, and the account birthdays carry the note commitment tree state
-needed for recovery. Parsing is performed using the `db_dump` command-line
+Zallet keystore, the account birthdays carry the note commitment tree state
+needed for recovery, and every transaction in the `zcashd` wallet is stored
+directly. Transactions are stored with a mined height when `zcashd` recorded
+one (it did only for transactions that added Orchard notes) or when the chain
+backend can resolve their block; the rest (never-mined sends, transactions on
+a non-main-chain block, and, under `--no-scan`, every transaction without a
+`zcashd`-recorded height) are stored as unmined, and the post-migration scan
+fills in the height of any that were in fact mined. The scan is what establishes the note commitment tree positions
+that make notes spendable, so balances are complete only once it has run past
+the wallet's history. Parsing is performed using the `db_dump` command-line
 utility. By default Zallet uses the copy it vendors and builds, which is the
 recommended choice; a `zcashd`-provided `db_dump` from the `zcutil/bin`
 directory of a source installation (via `--zcashd-install-dir`), or one on the
