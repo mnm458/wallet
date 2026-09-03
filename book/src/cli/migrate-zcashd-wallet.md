@@ -102,6 +102,56 @@ recommended choice; a `zcashd`-provided `db_dump` from the `zcutil/bin`
 directory of a source installation (via `--zcashd-install-dir`), or one on the
 system `$PATH`, are used otherwise.
 
+## How the wallet birthday is chosen
+
+The post-migration scan starts at an account's birthday, so a birthday later
+than the wallet's real history means funds the scan never finds. With a chain
+backend every imported account gets the same birthday; with `--no-scan` they
+can differ (see below).
+
+The birthday is the earliest evidence of activity among the wallet's
+transactions: the lowest of every mined height the migration knows, and of
+every un-mined transaction's expiry height minus 1000 blocks (expiry is
+normally creation height plus 40, so this is a generous margin). A transaction
+whose expiry height is zero, meaning it never expires, contributes nothing. A
+`zcashd` wallet may predate Sapling, so an estimate below Sapling activation
+stands as it is.
+
+- **With a chain backend** (the default), the migration first looks up every
+  block hash recorded on the wallet's transactions and records the main-chain
+  height of each one it can resolve as that transaction's mined height. Hashes
+  the backend does not know are ignored, and those transactions count through
+  their expiry heights instead. The birthday is then the estimate above, capped
+  at the current chain tip; a wallet with no usable evidence at all gets the
+  chain tip. The height up to which the wallet considers itself recovered is
+  the chain tip in every case. The note commitment tree state as of the block
+  before the birthday is then fetched from the backend and stored with the
+  accounts.
+- **With `--no-scan`**, no lookups happen: only the mined heights `zcashd`
+  itself recorded (those of transactions that added Orchard notes) are known,
+  and every other transaction counts through its expiry height. An account
+  that already has a birthday from those Orchard records keeps it, so accounts
+  can end up with different birthdays; every other account gets the
+  wallet-wide estimate above, or genesis if the wallet has no usable evidence.
+  The wallet rescans from those birthdays on the next start.
+
+An unsynced node causes one silent failure. If `zebrad` has not yet reached
+the blocks the wallet's transactions are in, those hashes do not resolve; a
+transaction with an expiry height still bounds the birthday, but one without
+(a pre-NU5 coinbase transaction, or any transaction from before Overwinter)
+then contributes nothing, so a wallet whose earliest activity is only such
+transactions gets a birthday later than its history, with nothing in the
+output to say so. Letting `zebrad` sync to the chain tip before migrating
+avoids it.
+
+Separately, the migration can fail with `missing tree state for height N` if
+the backend cannot supply the tree state for the block before the birthday.
+Because the birthday is capped at the chain tip, that block is one the node
+already has, so syncing further does not help; the exception is a node still
+at genesis, where there is no tip to cap against. The lookup happens before
+anything is written, so re-running is safe; if the error persists on a synced
+node, report it.
+
 Some `zcashd` wallet contents cannot be represented in a Zallet wallet, and are
 logged with a count rather than migrated: Sprout spending keys (move any Sprout
 funds using `zcashd` before migrating), address book entries, watch-only
