@@ -25,6 +25,14 @@ be considered breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- The `listsinceblock` JSON-RPC method, in account-aware form: entries use the
+  same schema as `z_listtransactions`, and the `blockhash` cursor must be a
+  block the wallet has scanned on its current best chain. See the book's
+  [altered semantics](https://zcash.github.io/zallet/zcashd/json_rpc.html#listsinceblock)
+  page for the differences from `zcashd`.
+
 ### Fixed
 
 - `migrate-zcashd-wallet` now includes un-mined transactions when estimating

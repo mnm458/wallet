@@ -62,6 +62,31 @@ Changes to response:
   given as a parameter, so this affects readers only. The `seedfp` field of each
   `derived_transparent` group uses the same encoding.
 
+### `listsinceblock`
+
+Changes to parameters:
+- The `includeWatchonly` parameter is removed. Imported viewing keys get
+  accounts with UUIDs, so their transactions are always included and are
+  attributable via each entry's `account_uuid`.
+- `blockhash` must be a block the wallet has scanned on its current best chain —
+  in the intended flow, a `lastblock` value returned by an earlier call. A block
+  that was reorged away is rejected with the same "Block not found" error as an
+  unknown block (`zcashd` instead walked back to the fork point); recover by
+  re-polling from an older cursor, and avoid the situation by requesting
+  `target_confirmations` at your finality depth so each cursor is already that
+  deep when it is next used.
+
+Changes to response:
+- Entries in `transactions` use the same account-scoped schema as
+  `z_listtransactions`, not the `gettransaction`-style entries `zcashd`
+  returned; those cannot represent partially-shielded transactions correctly.
+- `lastblock` is anchored to the wallet's fully-scanned height rather than the
+  node tip (in `zcashd` the two were the same). On a wallet that is catching up
+  the cursor advances with the scan, so a poller never skips past blocks whose
+  transactions the wallet has not yet recorded.
+- The `removed` field is not present (the wallet does not retain unwound
+  blocks; see the `blockhash` parameter changes above).
+
 ### `z_exportviewingkey`
 
 Changes to parameters:

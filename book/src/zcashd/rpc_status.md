@@ -41,7 +41,7 @@ Statuses:
 | `listaddressgroupings` | Not planned | [#59](https://github.com/zcash/zallet/issues/59) |
 | `listlockunspent` | Not yet implemented | Planned with modified semantics ([#60](https://github.com/zcash/zallet/issues/60)) |
 | `listreceivedbyaddress` | Not yet implemented | [#61](https://github.com/zcash/zallet/issues/61) |
-| `listsinceblock` | Not yet implemented | [#62](https://github.com/zcash/zallet/issues/62) |
+| `listsinceblock` | Implemented (altered) | [Changes](json_rpc.md#listsinceblock) |
 | `listtransactions` | Not yet implemented | Provided today in modified, account-scoped form as `z_listtransactions` ([#63](https://github.com/zcash/zallet/issues/63)) |
 | `listunspent` | Not planned | Subsumed by `z_listunspent`, which now includes transparent outputs ([changes](json_rpc.md#z_listunspent), [#64](https://github.com/zcash/zallet/issues/64)) |
 | `lockunspent` | Not yet implemented | Planned with modified semantics ([#65](https://github.com/zcash/zallet/issues/65)) |

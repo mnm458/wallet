@@ -216,7 +216,7 @@ impl WalletTx {
     }
 }
 
-fn query_transactions(
+pub(super) fn query_transactions(
     conn: &rusqlite::Transaction<'_>,
     account_uuid: Option<Uuid>,
     start_height: Option<u32>,

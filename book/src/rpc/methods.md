@@ -70,6 +70,33 @@ REMINDER: It is recommended that you back up your wallet files regularly. If you
 have not imported externally-produced keys, it only necessary to have backed up
 the wallet's key storage file.
 
+## `listsinceblock`
+
+Returns the wallet's transactions since (but not including) the given block, plus
+a `lastblock` cursor for the caller's next poll.
+
+Transaction entries use the same schema as `z_listtransactions`, not the
+`gettransaction`-style entries `zcashd` returned (which cannot represent
+partially-shielded transactions). Wallet transactions that are still unmined are
+always included.
+
+The `blockhash` cursor must be a block the wallet has scanned on its current best
+chain — in the intended flow, a `lastblock` value returned by an earlier call.
+After a chain reorganization, a cursor that is no longer on the best chain is
+rejected with "Block not found"; recover by re-polling from an older cursor, and
+avoid the situation by requesting `target_confirmations` at your finality depth so
+that each cursor is already that deep when it is next used.
+
+#### Arguments
+- `blockhash` (string, optional) The hash of a block on the wallet's best chain.
+  Only transactions in later blocks (or unmined) are returned. If omitted, all
+  wallet transactions are returned.
+- `target_confirmations` (numeric, optional, default=1) Must be at least 1. The
+  returned `lastblock` is the hash of the block `target_confirmations - 1` back
+  from the wallet's fully-scanned height (all zeroes if that reaches past the
+  wallet's scanned history), so that transactions with fewer confirmations than
+  this are reported again by the next poll.
+
 ## `pczt_combine`
 
 Combines multiple PCZTs (for the same transaction) into one.
