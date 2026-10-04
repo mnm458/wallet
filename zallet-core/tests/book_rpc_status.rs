@@ -1,14 +1,18 @@
-//! Pins the zcashd RPC method status table in the Zallet book to the set of
+//! Pins the zcashd RPC method status page in the Zallet book to the set of
 //! JSON-RPC methods that are actually registered.
 //!
-//! Unlike `book/src/rpc/methods.md`, the status table at
+//! Unlike `book/src/rpc/methods.md`, the status page at
 //! `book/src/zcashd/rpc_status.md` is maintained by hand, so nothing updates it
-//! when a method lands. This test fails whenever the table and the method
+//! when a method lands. This test fails whenever the page and the method
 //! registry disagree:
 //!
 //! - a method the table marks "Not yet implemented", "Not planned", or
-//!   "Omitted" is registered (the row is stale; update its status), or
-//! - a method the table marks "Implemented" is not registered.
+//!   "Omitted" is registered (the row is stale; update its status),
+//! - a method the table marks "Implemented" is not registered,
+//! - a table row uses a status string the test does not recognise (likely a
+//!   typo, which would otherwise exempt the row from the checks above),
+//! - a method named in the "Methods Zallet adds" section is not registered, or
+//! - a registered method appears nowhere on the page.
 
 #![cfg(zallet_build = "wallet")]
 
@@ -19,14 +23,31 @@ use std::collections::HashSet;
 /// JSON-RPC method.
 const GENERATED: &str = include_str!(concat!(env!("OUT_DIR"), "/rpc_methods.md"));
 
-/// The hand-maintained status table in the book.
+/// The hand-maintained status page in the book.
 const STATUS_TABLE_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../book/src/zcashd/rpc_status.md",
 );
 
+/// Statuses the table may use for a method that is registered.
+const PRESENT_STATUSES: &[&str] = &[
+    "Implemented",
+    "Implemented (altered)",
+    "Implemented (deprecated)",
+    "Implemented (partial)",
+];
+
+/// Statuses the table may use for a method that is not registered.
+const ABSENT_STATUSES: &[&str] = &["Not yet implemented", "Not planned", "Omitted"];
+
+/// Returns the backtick-quoted spans in `text`.
+fn backticked(text: &str) -> impl Iterator<Item = &str> {
+    // Splitting on the backticks leaves the quoted spans at the odd indices.
+    text.split('`').skip(1).step_by(2)
+}
+
 #[test]
-fn book_rpc_status_table_matches_registry() {
+fn book_rpc_status_page_matches_registry() {
     let registered = GENERATED
         .lines()
         .filter_map(|line| line.strip_prefix("## `")?.strip_suffix('`'))
@@ -36,10 +57,14 @@ fn book_rpc_status_table_matches_registry() {
         "failed to parse any method headings out of the generated reference",
     );
 
-    let table = std::fs::read_to_string(STATUS_TABLE_PATH).expect("status table exists");
+    let page = std::fs::read_to_string(STATUS_TABLE_PATH).expect("status page exists");
 
     let mut errors = vec![];
-    for line in table.lines() {
+
+    // Check the status table: every row's status must be a known status that
+    // agrees with whether the method is registered.
+    let mut table_methods = HashSet::new();
+    for line in page.lines() {
         // Method rows have the form `| `method` | Status | Notes |`, which
         // splits into ["", "`method`", "Status", "Notes", ""]. Splitting on the
         // delimiter and trimming (rather than matching exact spacing) means a
@@ -56,22 +81,86 @@ fn book_rpc_status_table_matches_registry() {
         else {
             continue;
         };
+        table_methods.insert(method);
 
         let is_registered = registered.contains(method);
-        if status.starts_with("Implemented") && !is_registered {
+        if PRESENT_STATUSES.contains(status) {
+            if !is_registered {
+                errors.push(format!(
+                    "`{method}` is marked \"{status}\" but is not a registered method"
+                ));
+            }
+        } else if ABSENT_STATUSES.contains(status) {
+            if is_registered {
+                errors.push(format!(
+                    "`{method}` is a registered method but the table still says \"{status}\""
+                ));
+            }
+        } else {
             errors.push(format!(
-                "`{method}` is marked \"{status}\" but is not a registered method"
+                "`{method}` has unrecognised status \"{status}\" (is it a typo?)"
             ));
         }
-        if ["Not yet implemented", "Not planned", "Omitted"]
-            .iter()
-            .any(|absent| status.starts_with(absent))
-            && is_registered
-        {
-            errors.push(format!(
-                "`{method}` is a registered method but the table still says \"{status}\""
-            ));
+    }
+
+    // Check the "Methods Zallet adds" section: every method a bullet names
+    // must be registered. A bullet has the form "- `name`, `name2` — text",
+    // possibly wrapped onto indented continuation lines; only the names before
+    // the em-dash are claims about the Zallet interface, as the text after it
+    // may mention methods (like the zcashd raw-transaction flow) that are
+    // intentionally not registered.
+    let adds_section = page
+        .split_once("## Methods Zallet adds")
+        .expect("status page has a \"Methods Zallet adds\" section")
+        .1;
+
+    let mut bullets: Vec<String> = vec![];
+    let mut in_bullet = false;
+    for line in adds_section.lines() {
+        if let Some(first) = line.strip_prefix("- ") {
+            bullets.push(first.into());
+            in_bullet = true;
+        } else if in_bullet && line.starts_with("  ") {
+            let bullet = bullets.last_mut().expect("in_bullet implies a bullet");
+            bullet.push(' ');
+            bullet.push_str(line.trim());
+        } else {
+            in_bullet = false;
         }
+    }
+    assert!(
+        !bullets.is_empty(),
+        "failed to parse any bullets out of the \"Methods Zallet adds\" section",
+    );
+
+    for bullet in &bullets {
+        let names = bullet
+            .split_once(" — ")
+            .map_or(bullet.as_str(), |(names, _)| names);
+        for method in backticked(names) {
+            if !registered.contains(method) {
+                errors.push(format!(
+                    "`{method}` is listed under \"Methods Zallet adds\" but is not a registered method"
+                ));
+            }
+        }
+    }
+
+    // Check coverage: every registered method must appear somewhere on the
+    // page — as a table row (which the checks above require to be accurate),
+    // or anywhere in the "Methods Zallet adds" section (which also covers its
+    // closing paragraph of methods from outside zcashd's wallet category).
+    let documented = table_methods
+        .iter()
+        .copied()
+        .chain(backticked(adds_section))
+        .collect::<HashSet<_>>();
+    let mut undocumented = registered.difference(&documented).collect::<Vec<_>>();
+    undocumented.sort();
+    for method in undocumented {
+        errors.push(format!(
+            "`{method}` is a registered method but appears nowhere on the status page"
+        ));
     }
 
     assert!(
