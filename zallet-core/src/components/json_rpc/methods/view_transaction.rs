@@ -8,7 +8,7 @@ use orchard::note_encryption::{
 use rusqlite::{OptionalExtension, named_params};
 use schemars::JsonSchema;
 use serde::Serialize;
-use transparent::keys::TransparentKeyScope;
+use transparent::{bundle::TxOut, keys::TransparentKeyScope};
 use zcash_address::{
     ToAddress, ZcashAddress,
     unified::{self, Encoding},
@@ -25,7 +25,7 @@ use zcash_protocol::{
 };
 
 use crate::components::{
-    chain::{Chain, ChainView},
+    chain::{Chain, ChainError, ChainView},
     database::DbConnection,
     json_rpc::{
         server::LegacyCode,
@@ -680,38 +680,38 @@ pub(crate) async fn call<C: Chain>(
             for (input, idx) in bundle.vin.iter().zip(0u16..) {
                 let txid_prev = input.prevout().txid().to_string();
 
-                let (account_uuid, address, value) =
-                    match chain_view.get_transaction(*input.prevout().txid()).await {
-                        Ok(Some(prev_tx)) => {
-                            let output = prev_tx
-                                .inner()
-                                .transparent_bundle()
-                                .and_then(|b| {
-                                    b.vout.get(
-                                        usize::try_from(input.prevout().n()).expect("should fit"),
-                                    )
-                                })
-                                .expect("Zaino should have rejected this earlier");
-                            let address = output.recipient_address();
+                let prev_outputs = chain_view
+                    .get_transaction(*input.prevout().txid())
+                    .await
+                    .map(|prev_tx| {
+                        prev_tx.and_then(|prev_tx| {
+                            prev_tx.inner().transparent_bundle().map(|b| b.vout.clone())
+                        })
+                    });
+                // An input whose spent output cannot be found has no known value or
+                // address, so it is left out of `spends`. Its value is then missing
+                // from `transparent_input_values`, so the fee is omitted, as the `fee`
+                // field documents.
+                let Some(output) = spent_transparent_output(prev_outputs, input.prevout().n())?
+                else {
+                    continue;
+                };
+                let address = output.recipient_address();
 
-                            let account_id = address.as_ref().and_then(|address| {
-                                account_ids.iter().find(|account| {
-                                    wallet
-                                        .get_transparent_address_metadata(**account, address)
-                                        .transpose()
-                                        .is_some()
-                                })
-                            });
+                let account_id = address.as_ref().and_then(|address| {
+                    account_ids.iter().find(|account| {
+                        wallet
+                            .get_transparent_address_metadata(**account, address)
+                            .transpose()
+                            .is_some()
+                    })
+                });
 
-                            (
-                                account_id.map(|account| account.expose_uuid().to_string()),
-                                address.map(|addr| addr.encode(wallet.params())),
-                                output.value(),
-                            )
-                        }
-                        Ok(None) => unreachable!(),
-                        Err(_) => todo!(),
-                    };
+                let (account_uuid, address, value) = (
+                    account_id.map(|account| account.expose_uuid().to_string()),
+                    address.map(|addr| addr.encode(wallet.params())),
+                    output.value(),
+                );
 
                 transparent_input_values.insert(input.prevout(), value);
 
@@ -1137,6 +1137,25 @@ fn is_expired_tx(tx: &zcash_primitives::transaction::Transaction, height: BlockH
     }
 }
 
+/// Finds the transparent output that a transaction input spends.
+///
+/// `prev_outputs` is the chain's answer for the previous transaction: its transparent
+/// outputs, or `None` if the chain does not know that transaction. Returns `Ok(None)` if
+/// the spent output cannot be found. Returns an RPC error if the chain lookup failed.
+fn spent_transparent_output(
+    prev_outputs: Result<Option<Vec<TxOut>>, ChainError>,
+    index: u32,
+) -> RpcResult<Option<TxOut>> {
+    let prev_outputs = prev_outputs.map_err(|e| {
+        LegacyCode::Database.with_message(format!("Failed to fetch a spent output: {e}"))
+    })?;
+    Ok(prev_outputs.and_then(|outputs| {
+        usize::try_from(index)
+            .ok()
+            .and_then(|index| outputs.into_iter().nth(index))
+    }))
+}
+
 fn is_expiring_soon_tx(
     tx: &zcash_primitives::transaction::Transaction,
     next_height: BlockHeight,
@@ -1164,6 +1183,41 @@ mod tests {
             0x4b, 0x8e, 0x97, 0xc1,
         ];
         assert_eq!(ovk_for_shielding_from_taddr(&seed), expected);
+    }
+
+    /// A transparent output with `value` zatoshis and an empty script.
+    fn txout(value: u64) -> TxOut {
+        // The encoding is the little-endian value, then a zero-length script.
+        let mut bytes = value.to_le_bytes().to_vec();
+        bytes.push(0);
+        TxOut::read(&mut &bytes[..]).expect("a well-formed output encoding")
+    }
+
+    #[test]
+    fn spent_output_is_found_by_index() {
+        let outputs = vec![txout(1), txout(2)];
+        assert_eq!(
+            spent_transparent_output(Ok(Some(outputs)), 1).unwrap(),
+            Some(txout(2)),
+        );
+    }
+
+    #[test]
+    fn spent_output_cannot_be_found_without_failing() {
+        // The previous transaction is unknown to the chain.
+        assert_eq!(spent_transparent_output(Ok(None), 0).unwrap(), None);
+        // The previous transaction has no output at this index.
+        assert_eq!(
+            spent_transparent_output(Ok(Some(vec![txout(1)])), 1).unwrap(),
+            None,
+        );
+    }
+
+    #[test]
+    fn spent_output_lookup_failure_is_an_rpc_error() {
+        let err = spent_transparent_output(Err(ChainError::unavailable("node down")), 0)
+            .expect_err("a failed chain lookup must not read as a missing output");
+        assert_eq!(err.code(), i32::from(LegacyCode::Database));
     }
 
     #[test]

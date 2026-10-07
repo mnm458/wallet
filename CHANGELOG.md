@@ -44,6 +44,11 @@ be considered breaking changes.
 
 ### Fixed
 
+- `z_viewtransaction` no longer panics when it cannot find the output
+  that a transparent input spends: the previous transaction is unknown to the
+  node, or has no output at that index. That input is left out of `spends`,
+  and `fee` is omitted. A failed lookup of the previous transaction now returns
+  an RPC error.
 - `migrate-zcashd-wallet` now includes un-mined transactions when estimating
   the wallet birthday. An expired or conflicted transaction still shows that
   the wallet's addresses were in use around its expiry height, so history near
