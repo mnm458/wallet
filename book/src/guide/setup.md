@@ -60,42 +60,31 @@ bind = ["127.0.0.1:SOMEPORT"]
 In particular, you currently need to configure the `[indexer]` section to point
 at your full node's JSON-RPC endpoint. The relevant config options in that
 section are:
-- `validator_address` (if not running on localhost at the default port)
+- `validator_address` (required)
 - `validator_cookie_path` (if using cookie authentication): set it to your
   full node's cookie file. Setting this path is what enables cookie auth;
   there is no separate on/off flag.
 - `validator_user` and `validator_password` (if using basic auth)
 
-Both the default `zebra` backend and the `zaino` backend use these `[indexer]`
-settings to reach the full node over JSON-RPC. The `zebra` backend reads chain
-state directly from a co-located `zebrad` (see below) — including non-best-chain
-(side-chain) blocks and transactions, which `zebrad`'s local state tracks — so
-it uses JSON-RPC only for the mempool and transaction submission. The `zaino`
-backend uses JSON-RPC for **all** chain data, unless you also configure
-[`[indexer.read_state_service]`](#reading-chain-state-from-a-local-zebrad).
+The `zebra` backend uses these `[indexer]` settings to reach the full node over
+JSON-RPC. It reads chain state directly from a co-located `zebrad` (see below) —
+including non-best-chain (side-chain) blocks and transactions, which `zebrad`'s local
+state tracks — so it uses JSON-RPC only for the mempool and transaction submission.
 
 ### Reading chain state from a local zebrad
 
-Zallet supports two chain backends that determine how it reads chain state: the default
-`zebra` backend and the `zaino` backend. The backend is selected at runtime by the
-config file's top-level `backend` key, which the `zallet` launcher uses to dispatch to
-the matching backend binary; see
-[Choosing a chain backend](installation/README.md#choosing-a-chain-backend) for the
-comparison and for how to run each one.
+The chain backend is selected at runtime by the config file's top-level `backend` key,
+which the `zallet` launcher uses to dispatch to the matching backend binary; see
+[Choosing a chain backend](installation/README.md#choosing-a-chain-backend).
 
-Zallet can read finalized chain state directly from a co-located `zebrad`'s state
-database (opened read-only), rather than fetching every block over JSON-RPC. This is
-enabled by the `[indexer.read_state_service]` section.
-
-The default `zebra` backend **requires** this section; without one, `zallet
-start` fails with:
+The `zebra` backend reads finalized chain state directly from a co-located `zebrad`'s
+state database (opened read-only). This is configured by the
+`[indexer.read_state_service]` section, which the `zebra` backend **requires**;
+without one, `zallet start` fails with:
 
 ```
 the zebra-state backend requires an [indexer.read_state_service] config section
 ```
-
-The `zaino` backend uses the section when it is present, and otherwise fetches all
-chain data over JSON-RPC.
 
 This relies on zebrad's indexer gRPC interface, which is **not** available
 in a default `zebrad` build. You must compile `zebrad` with the `indexer` feature

@@ -13,10 +13,6 @@ type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub enum ChainError {
     /// The chain source is temporarily unable to serve the request; retrying later may
     /// succeed (transient transport failure, the backend is still syncing, work queue full).
-    ///
-    /// Constructed by alternative backends that can distinguish retryable failures; the
-    /// Zaino backend currently classifies all opaque failures as [`ChainError::Backend`].
-    #[allow(dead_code)]
     Unavailable(BoxError),
     /// The fixed chain view was invalidated while serving a read, usually because a
     /// non-finalized block was reorged away. The caller must capture a fresh view before

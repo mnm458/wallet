@@ -1,8 +1,8 @@
 //! The wallet's view of the Zcash chain.
 //!
 //! [`Chain`] and [`ChainView`] are the backend-neutral interface the rest of the wallet
-//! uses to read chain data. The backend implementations live in the `zaino` and `zebra`
-//! modules, selected by cargo feature.
+//! uses to read chain data. Each backend implementation lives in its own `backends/*`
+//! workspace and ships as its own binary.
 
 use std::collections::{BTreeSet, HashMap};
 use std::fmt;
@@ -191,10 +191,10 @@ pub trait Chain: Clone + Send + Sync + 'static {
 
 /// The status of a network upgrade as reported by a backing full node.
 ///
-/// This is the single neutral representation both backends produce. The `zebra` backend
-/// deserializes the node’s `getblockchaininfo` status string directly into it; the `zaino`
-/// backend converts its connector’s status enum via [`From`]. The `Deserialize` encoding is
-/// the lowercase status string the node reports (`"active"`, `"pending"`, `"disabled"`).
+/// This is the neutral representation every backend produces. The `zebra` backend
+/// deserializes the node’s `getblockchaininfo` status string directly into it. The
+/// `Deserialize` encoding is the lowercase status string the node reports (`"active"`,
+/// `"pending"`, `"disabled"`).
 #[derive(Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UpgradeStatus {
@@ -873,8 +873,8 @@ mod tests {
     #[cfg(feature = "spend-index")]
     use transparent::bundle::OutPoint;
 
-    /// A trivial in-memory [`ChainView`], proving the trait is implementable by a non-Zaino
-    /// backend and locking the contract.
+    /// A trivial in-memory [`ChainView`], proving the trait is implementable without a live
+    /// node and locking the contract.
     #[derive(Clone)]
     pub(crate) struct MockChainView {
         tip: ChainBlock,

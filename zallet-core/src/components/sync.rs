@@ -1066,13 +1066,12 @@ async fn steady_state_iteration<C: Chain>(
         //
         // Yield to the runtime and pause briefly before re-iterating. `snapshot`,
         // `tip`, and `get_mempool_stream` can all return `Poll::Ready` from cached
-        // state (MockChain does, and the Zaino `FetchServiceSubscriber` was observed
-        // doing so in #136), so without this yield an aborted `steady_state` task
+        // state (MockChain does, and a backend was observed doing so in #136), so without this yield an aborted `steady_state` task
         // can complete a full iteration without ever polling its abort status,
         // spinning until the backend's view changes. The yield lets tokio observe
         // the abort and end the task; the sleep bounds the CPU cost of a non-aborted
         // task that is legitimately re-polling a backend serving a stale cached view
-        // (a backend contract violation, but one Zaino has been observed to exhibit).
+        // (a backend contract violation, but one that has been observed, #136).
         None if tip_changed => {
             tokio::task::yield_now().await;
             time::sleep(Duration::from_millis(500)).await;
@@ -1237,7 +1236,7 @@ fn address_request_bounds(
 }
 
 /// Services a [`TransactionDataRequest::TransactionsInvolvingAddress`] spend-search request on a
-/// backend without a per-outpoint spend index (the `zaino` build).
+/// backend without a per-outpoint spend index (a build without the `spend-index` feature).
 ///
 /// Cheap path first: diff the wallet's tracked unspent outputs at the address against the chain's
 /// current unspent set. Only if one of ours is missing (i.e. actually spent on chain) is the
@@ -1371,7 +1370,7 @@ async fn data_requests<C: Chain>(
                 }
                 // With `spend-index`, spend detection uses `GetSpendingTx` (below) and any
                 // remaining `TransactionsInvolvingAddress` requests are ephemeral-address
-                // discovery, covered by full-block scanning. Without it (the `zaino` build),
+                // discovery, covered by full-block scanning. Without `spend-index`,
                 // these carry the spend-search requests and are serviced via address queries.
                 #[cfg(feature = "spend-index")]
                 TransactionDataRequest::TransactionsInvolvingAddress(_) => (),
@@ -1742,7 +1741,7 @@ mod tests {
     // arm of `steady_state_iteration` previously returned without an intervening
     // await, so against a `ChainView` whose `snapshot`, `tip`, and
     // `get_mempool_stream` all return `Poll::Ready` from cached state (the in-tree
-    // `MockChain`, and the Zaino `FetchServiceSubscriber` as reported in #136), the
+    // `MockChain`, and a backend as reported in #136), the
     // task could complete a full iteration without ever polling its abort status and
     // spin indefinitely. The fix inserts `tokio::task::yield_now().await` in that arm;
     // this test asserts the aborted task now exits within a bounded time.

@@ -13,7 +13,7 @@ one at a different `--datadir`.
 
 ## "The config file selects the '…' chain backend, but this binary provides the '…' backend"
 
-You invoked a backend binary (e.g. `zallet-zaino`) directly against a config
+You invoked a backend binary (e.g. `zallet-zebra`) directly against a config
 whose `backend` key names a different backend. Run the `zallet` launcher (which
 dispatches on the config), run the matching backend binary, or change the
 config's `backend` key. See
@@ -30,8 +30,7 @@ the service's `PATH` includes it.
 
 The default `zebra` backend reads chain state directly from a co-located
 `zebrad` and cannot start without the `[indexer.read_state_service]` section.
-Add it (see [Wallet setup](guide/setup.md#reading-chain-state-from-a-local-zebrad)),
-or switch to the `zaino` backend if you cannot co-locate `zebrad`.
+Add it (see [Wallet setup](guide/setup.md#reading-chain-state-from-a-local-zebrad)).
 
 ## "no zebra-state v… database found under '…'"
 

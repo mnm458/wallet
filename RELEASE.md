@@ -5,39 +5,35 @@ maintainers with write access to `zcash/zallet`.
 
 ## Release model
 
-Four packages ship in release lockstep under one version number:
+Three packages ship in release lockstep under one version number:
 
 | Package | Workspace | Audience |
 |---|---|---|
 | `zallet` (launcher) | Root | End users |
 | `zallet-core` | Root | Backend implementors |
 | `zallet-zebra` | `backends/zebra/` | Operators (Zebra backend) |
-| `zallet-zaino` | `backends/zaino/` | Operators (Zaino backend) |
 
-The three workspaces each have their own `Cargo.lock`. The four package's
-dependencies MUST be upgraded in lockstep, enforced by `utils/check-lockstep.sh` in CI. Use
-`utils/bump-version.sh` (not hand-edits) to bump all four at once.
+The workspaces each have their own `Cargo.lock`. The packages' dependencies MUST
+be upgraded in lockstep, enforced by `utils/check-lockstep.sh` in CI. Use
+`utils/bump-version.sh` (not hand-edits) to bump all three at once.
 
 ## Before you start
 
-Run the full pre-flight suite across all three workspaces (root, then each
+Run the full pre-flight suite across every workspace (root, then each
 backend via `--manifest-path`):
 
 ```bash
 # Format check
 cargo fmt --all -- --check
 cargo fmt --manifest-path backends/zebra/Cargo.toml -- --check
-cargo fmt --manifest-path backends/zaino/Cargo.toml -- --check
 
 # Lint
 cargo clippy --all-targets -- -D warnings
 cargo clippy --manifest-path backends/zebra/Cargo.toml --all-targets -- -D warnings
-cargo clippy --manifest-path backends/zaino/Cargo.toml --all-targets -- -D warnings
 
 # Test
 cargo test
 cargo test --manifest-path backends/zebra/Cargo.toml
-cargo test --manifest-path backends/zaino/Cargo.toml
 
 # Verify lockstep
 utils/check-lockstep.sh
@@ -65,13 +61,13 @@ utils/bump-version.sh <version> --date today
 
 The script updates:
 
-- The four `Cargo.toml` manifests (`zallet`, `zallet-core`,
-  `backends/zebra/Cargo.toml`, `backends/zaino/Cargo.toml`).
+- The three `Cargo.toml` manifests (`zallet`, `zallet-core`,
+  `backends/zebra/Cargo.toml`).
 - trycmd fixtures (`as_of_version` fields) in `backends/*/tests`.
 - Book and README prose naming the current release version.
-- All four CHANGELOGs: promotes `## [Unreleased]` to
+- All three CHANGELOGs: promotes `## [Unreleased]` to
   `## [<version>] - <date>` and leaves a fresh empty `## [Unreleased]` heading.
-- The three lockfiles, via `utils/sync-lockfiles.sh` (which also runs
+- Every workspace lockfile, via `utils/sync-lockfiles.sh` (which also runs
   `check-lockstep.sh`).
 
 ### Phase changes (alpha to beta, beta to stable)
@@ -85,14 +81,13 @@ are left intact. See commit `bf1917e` for the alpha-to-beta precedent.
 
 ## Review the changelogs
 
-Four changelog files, routed by audience:
+Three changelog files, routed by audience:
 
 | File | Documents | Audience |
 |---|---|---|
 | `CHANGELOG.md` | JSON-RPC methods, CLI, config, wallet DB format, release artifacts | People who run Zallet |
 | `zallet-core/CHANGELOG.md` | `zallet-core` public Rust API | Backend implementors |
 | `backends/zebra/CHANGELOG.md` | `zallet-zebra` binary | Operators (Zebra backend) |
-| `backends/zaino/CHANGELOG.md` | `zallet-zaino` binary | Operators (Zaino backend) |
 
 Rules (see `AGENTS.md` for the full guide):
 
@@ -102,7 +97,7 @@ Rules (see `AGENTS.md` for the full guide):
 - A change serving two audiences goes in both files, written differently.
 - The `## [Unreleased]` heading is permanent and stays at the top of every file,
   even when empty following a release.
-- All four packages ship in lockstep, so every release heading appears in every
+- All three packages ship in lockstep, so every release heading appears in every
   file. A component with no changes for its audience gets an empty section.
 
 ## cargo vet
@@ -113,7 +108,6 @@ If the lockfile regeneration pulled in new transitive dependencies, run
 ```bash
 cargo vet
 cargo vet --manifest-path backends/zebra/Cargo.toml
-cargo vet --manifest-path backends/zaino/Cargo.toml
 ```
 
 Add `[[exemptions.*]]` or `[[trusted.*]]` entries to `supply-chain/config.toml`
@@ -171,8 +165,8 @@ Triggered by the `v*.*.*` tag push, `release.yml` runs:
 4. **manifest** — stitches both arches into a multi-arch OCI index, tags
    `latest` + `v<version>` + commit SHA, and attests SLSA provenance on the
    final index digest.
-5. **binaries_deb_release** (matrix: amd64 + arm64) — extracts the three binaries
-   (`zallet`, `zallet-zebra`, `zallet-zaino`) from the image, smoke-tests each
+5. **binaries_deb_release** (matrix: amd64 + arm64) — extracts the two binaries
+   (`zallet`, `zallet-zebra`) from the image, smoke-tests each
    (`zallet -h` in a Debian container), builds a standalone tarball per arch,
    builds a `.deb` per arch (via `cargo deb --no-build`), GPG-signs each
    artifact (`sysadmin@zodl.com`), generates SPDX SBOMs and build-provenance
