@@ -21,6 +21,10 @@ should be considered breaking changes.
 
 ## [Unreleased]
 
+### Removed
+
+- `ZalletConfig::indexer_db_path`.
+
 ## [0.1.0-beta.3] - 2026-08-24
 
 ### Added

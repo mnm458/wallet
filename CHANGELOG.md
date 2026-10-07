@@ -13,10 +13,11 @@ affect:
   the backend binaries, for anyone implementing a chain backend against it.
 - [`backends/zebra/CHANGELOG.md`](backends/zebra/CHANGELOG.md) — the
   `zallet-zebra` binary, for operators running the Zebra read-state backend.
-- [`backends/zaino/CHANGELOG.md`](backends/zaino/CHANGELOG.md) — the
-  `zallet-zaino` binary, for operators running the Zaino indexer backend.
 
-All four packages move in release lockstep and share one version number, so the
+The removed `zallet-zaino` binary's changelog, as of its last release, is at
+[`v0.1.0-beta.3`](https://github.com/zcash/zallet/blob/v0.1.0-beta.3/backends/zaino/CHANGELOG.md).
+
+All packages move in release lockstep and share one version number, so the
 same release heading appears in each file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
@@ -24,6 +25,22 @@ Prior to the 1.0.0 release, no Semantic Versioning is followed; all releases sho
 be considered breaking changes.
 
 ## [Unreleased]
+
+### Removed
+
+- The `zaino` chain backend and its `zallet-zaino` binary. The release
+  tarballs, Debian packages, and Docker images no longer contain it. A config
+  file with `backend = "zaino"` must change to `backend = "zebra"`. The `zebra`
+  backend requires a `zebrad` built with the `indexer` feature, an
+  `[indexer.read_state_service]` config section, and `zebrad`'s state directory
+  on the same host. The wallet database needs no migration. The `zaino`
+  directory in the data directory is no longer used, and you can delete it.
+- No chain backend currently runs on macOS or Windows, because the `zebra`
+  backend is Linux-only.
+
+### Deprecated
+
+- `indexer.db_path`. It has no effect, and Zallet logs a warning when it is set.
 
 ### Fixed
 

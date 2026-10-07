@@ -14,7 +14,7 @@ categories = ["cryptography::cryptocurrencies"]
 publish = false
 
 # This package is deliberately its own workspace root with its own lockfile, so its
-# zebra-* dependency versions can move independently of the zaino backend's
+# zebra-* dependency versions can move independently of the other workspaces
 # (librocksdb-sys's `links = "rocksdb"` forbids two zebra-state versions in one
 # resolution graph). See https://github.com/zcash/zallet/issues/540.
 [workspace]

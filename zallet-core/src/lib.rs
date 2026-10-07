@@ -11,9 +11,8 @@
 //! - `zallet` (in the root workspace, alongside this crate) is a dependency-light
 //!   launcher: it reads the config file's top-level `backend` key and hands the entire
 //!   invocation over to the matching `zallet-<backend>` binary.
-//! - `zallet-zebra` and `zallet-zaino` (each in its own workspace under `backends/`, so
-//!   their `zebra`/`zaino` dependency trees can move independently) are the real wallet
-//!   binaries. Each supplies a [`components::chain::ChainRuntime`] for its chain backend
+//! - `zallet-zebra` (in its own workspace under `backends/`, so its `zebra` dependency
+//!   tree can move independently) is the real wallet binary. Each supplies a [`components::chain::ChainRuntime`] for its chain backend
 //!   and calls [`application::boot`], which registers the backend and starts the
 //!   [Abscissa] application defined here; everything else — CLI, configuration, wallet
 //!   database, key store, sync engine, JSON-RPC interface — is this crate.

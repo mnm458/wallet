@@ -95,6 +95,7 @@ cmd-migrate-wallet-passphrase-wrong = The passphrase was incorrect; please try a
 ## Startup messages
 
 warn-config-unused = Config option '{$option}' is not yet implemented in {-zallet}; ignoring its value.
+warn-config-deprecated-ignored = Config option '{$option}' is deprecated and has no effect; remove it from your config.
 
 rpc-bare-password-auth-info = Using '{-cfg-rpc-auth-password}' authorization
 rpc-bare-password-auth-warn =

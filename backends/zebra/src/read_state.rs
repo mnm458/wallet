@@ -4,14 +4,12 @@
 //! database (opened read-only as a RocksDB secondary) and follows the non-finalized
 //! tip over zebrad's gRPC indexer interface.
 //!
-//! Each backend carries its own copy of this module rather than sharing a crate: a
-//! shared crate's single manifest would bind both backend graphs to one zebra-state
-//! semver range (`[patch.crates-io]` cannot apply across a semver boundary, and
+//! This module lives in the backend rather than in a shared crate: a shared crate's
+//! single manifest would bind every backend that uses it to one zebra-state semver
+//! range (`[patch.crates-io]` cannot apply across a semver boundary, and
 //! librocksdb-sys's `links = "rocksdb"` forbids two zebra-state versions in one
 //! graph), recreating the coupling the split-workspace design (see
-//! <https://github.com/zcash/zallet/issues/540>) exists to remove. The copies may
-//! diverge as the backends' zebra-* versions do; when touching this file, check
-//! whether the sibling backend's copy needs the same change.
+//! <https://github.com/zcash/zallet/issues/540>) exists to remove.
 
 use std::fmt;
 use std::path::PathBuf;
@@ -21,7 +19,7 @@ use tokio::net::lookup_host;
 use tokio::task::JoinHandle;
 use zcash_protocol::consensus::{NetworkType, NetworkUpgrade, Parameters};
 use zebra_rpc::sync::init_read_state_with_syncer;
-use zebra_state::{ChainTipChange, ReadStateService};
+use zebra_state::ReadStateService;
 
 /// A boxed error from the zebra crates.
 type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
@@ -165,7 +163,7 @@ pub async fn init_read_state_service(
     zebra_network: &zebra_chain::parameters::Network,
     grpc_address: &str,
     zebra_state_path: PathBuf,
-) -> Result<(ReadStateService, ChainTipChange, JoinHandle<()>), ReadStateError> {
+) -> Result<(ReadStateService, JoinHandle<()>), ReadStateError> {
     // Resolve the gRPC indexer address used by the non-finalized syncer.
     let grpc_addr = lookup_host(grpc_address)
         .await
@@ -209,7 +207,7 @@ pub async fn init_read_state_service(
     }
 
     info!("Initializing read-only Zebra state service");
-    let (read_state_service, _latest_tip, tip_change, sync_task) =
+    let (read_state_service, _latest_tip, _tip_change, sync_task) =
         init_read_state_with_syncer(zebra_config, zebra_network, grpc_addr)
             .await
             // Outer JoinError from the spawned init task.
@@ -217,5 +215,5 @@ pub async fn init_read_state_service(
             // Inner BoxError from read-state initialization.
             .map_err(ReadStateError::Init)?;
 
-    Ok((read_state_service, tip_change, sync_task))
+    Ok((read_state_service, sync_task))
 }
