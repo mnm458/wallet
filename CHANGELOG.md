@@ -26,6 +26,14 @@ be considered breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- The `zallet backup` command writes a consistent, integrity-checked snapshot
+  of the wallet database to a backup file using SQLite's Online Backup API
+  (the first piece of #195, and the CLI command contemplated by #49). It
+  requires a stopped wallet; scheduled backups of a running wallet remain
+  tracked in #195.
+
 ### Removed
 
 - The `zaino` chain backend and its `zallet-zaino` binary. The release

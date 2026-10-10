@@ -70,6 +70,13 @@ cmd-generate-mnemonic-confirm-backup-next =
     it somewhere durable; until you do, {-zallet} will not derive accounts or addresses
     from it.
 
+cmd-backup-complete = Wallet database backed up to {$path} ({$pages} pages).
+cmd-backup-identity-reminder =
+    Reminder: restoring this backup also requires the age encryption identity at
+    {$identity}. It never changes, so back it up once — to a different location
+    than the wallet database backup, or anyone holding the backup can decrypt its
+    key material.
+
 cmd-confirm-backup-already-confirmed = This phrase’s backup has already been confirmed.
 cmd-confirm-backup-how-to-obtain =
     {-zallet} never displays a recovery phrase. To confirm this one’s backup you need
@@ -273,6 +280,16 @@ err-seed-selection-unknown-seedfp =
 
 ## Backup confirmation errors
 
+err-backup-destination-exists =
+    A file already exists at {$path}; refusing to overwrite it, since it may be a
+    previous backup. Choose a different path, or pass a directory to get a
+    timestamped file name.
+err-backup-integrity = The backup failed its integrity check ({$detail}) and was discarded.
+err-backup-no-wallet = No wallet database exists at {$path}, so there is nothing to back up.
+err-backup-not-completing =
+    The backup is not completing because the wallet database stays busy. No other
+    {-zallet} process can hold it (this command locks the datadir), so something
+    else has the database open; close it and retry.
 err-backup-not-confirmed =
     The backup of this wallet's mnemonic phrase has not been confirmed. Run
     '{-zallet} confirm-backup' first, or set '{-cfg-keystore-require-backup}' to false.
