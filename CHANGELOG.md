@@ -59,6 +59,10 @@ be considered breaking changes.
   earlier activity now sets the birthday directly, and a wallet with no usable
   evidence at all falls back to the genesis height instead of Sapling
   activation.
+- `migrate-zcashd-wallet --help` no longer says that a local `zcashd`
+  installation is required. The `--zcashd-install-dir` flag is optional: by
+  default Zallet uses the Berkeley DB 6.2 `db_dump` it vendors, falling back to
+  one on the `PATH`.
 - Fixed a race that could leave wallet data requests unprocessed. The sync task
   now signals data-request processing after new blocks are stored. It also
   signals after each mempool transaction is stored.
