@@ -1700,6 +1700,14 @@ criteria = "safe-to-deploy"
 version = "0.5.3"
 criteria = "safe-to-deploy"
 
+[[exemptions.tower-batch-control]]
+version = "1.1.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.tower-fallback]]
+version = "0.2.43"
+criteria = "safe-to-deploy"
+
 [[exemptions.tower-http]]
 version = "0.6.11"
 criteria = "safe-to-deploy"
@@ -1829,7 +1837,7 @@ version = "1.1.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.webpki-roots]]
-version = "1.0.8"
+version = "1.0.10"
 criteria = "safe-to-deploy"
 
 [[exemptions.which]]
