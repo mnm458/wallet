@@ -500,6 +500,17 @@ criteria = "safe-to-deploy"
 delta = "0.1.25 -> 0.1.26"
 notes = "Parser changes use existing parsing machinery in an obvious way."
 
+[[audits.rustls-webpki]]
+who = "Pacu <pacu@zecdev.org>"
+criteria = "safe-to-deploy"
+delta = "0.103.13 -> 0.103.16"
+notes = """
+Adds explicit SPKI distrust for the compromised eMudhra intermediates and tests
+the path-building behavior. The remaining production changes update AWS-LC-RS
+algorithm exposure and simplify CRL iteration. No unsafe code or new ambient
+capabilities are introduced.
+"""
+
 [[audits.rustversion]]
 who = "Jack Grigg <jack@electriccoin.co>"
 criteria = "safe-to-deploy"
@@ -741,6 +752,18 @@ user-id = 169181 # Kris Nuttycombe (nuttycom)
 start = "2022-12-15"
 end = "2026-03-04"
 
+[[trusted.tower-batch-control]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.tower-fallback]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
 [[trusted.windows-core]]
 criteria = "safe-to-deploy"
 user-id = 64539 # Kenny Kerr (kennykerr)
@@ -980,6 +1003,48 @@ criteria = "safe-to-deploy"
 user-id = 169181 # Kris Nuttycombe (nuttycom)
 start = "2024-12-17"
 end = "2027-07-03"
+
+[[trusted.zebra-chain]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.zebra-consensus]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.zebra-network]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.zebra-node-services]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.zebra-rpc]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.zebra-script]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
+
+[[trusted.zebra-state]]
+criteria = "safe-to-deploy"
+user-id = 235397 # Marek (upbqdn)
+start = "2023-10-17"
+end = "2027-07-28"
 
 [[trusted.zewif]]
 criteria = "safe-to-deploy"
