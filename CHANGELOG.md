@@ -28,6 +28,14 @@ be considered breaking changes.
 
 ### Added
 
+- The `zallet backup` command writes a consistent, integrity-checked snapshot
+  of the wallet database to a backup file using SQLite's Online Backup API
+  (the manual backup command contemplated by #49 and #195). It works whether
+  or not the wallet is running: a backup of a running wallet is a
+  transaction-consistent snapshot taken without blocking it, and the command
+  fails loudly rather than running forever if sustained wallet writes keep
+  the copy from completing. Scheduled periodic backups from inside the
+  running process remain tracked in #195.
 - NU7 support in ordinary builds. Zallet follows the NU7 activation on
   Testnet (height 4,465,026), and `regtest_nuparams` accepts the NU7 consensus
   branch ID without building with `--cfg zcash_unstable="nu7"`. NU7 has no
@@ -76,6 +84,10 @@ be considered breaking changes.
   earlier activity now sets the birthday directly, and a wallet with no usable
   evidence at all falls back to the genesis height instead of Sapling
   activation.
+- `migrate-zcashd-wallet --help` no longer says that a local `zcashd`
+  installation is required. The `--zcashd-install-dir` flag is optional: by
+  default Zallet uses the Berkeley DB 6.2 `db_dump` it vendors, falling back to
+  one on the `PATH`.
 - Fixed a race that could leave wallet data requests unprocessed. The sync task
   now signals data-request processing after new blocks are stored. It also
   signals after each mempool transaction is stored.
@@ -87,6 +99,24 @@ be considered breaking changes.
   note whose memo the wallet has not yet fetched likewise omits the memo
   fields, instead of reporting the placeholder text `TODO: Always enhance
   every note` in the `memo` field (which is documented as hexadecimal).
+- `migrate-zcashd-wallet` now records the P2SH addresses of the redeem scripts it
+  imports (from zcashd's `importaddress <redeemscript>` and
+  `addmultisigaddress`) as exposed. Such an address was in use outside the wallet
+  before it was imported, but it has no derivation, so it was reached by neither
+  the exposures recorded in the migrated wallet nor the gap-limit inference that
+  covers derived receivers; one that had never appeared in a wallet transaction
+  was left with no exposure height at all. One consequence is that
+  `listaddresses`, which reports only exposed addresses, did not surface it where
+  `zcashd` did.
+- `migrate-zcashd-wallet` no longer aborts when a `zcashd` wallet's watch-only
+  pubkeys (from `importpubkey`) include one whose address the Zallet wallet already
+  tracks. Every such pubkey was registered regardless, and the wallet rejects an
+  import of key material another account holds, so migrating a second `zcashd`
+  wallet that shared a watched key failed with a database error *after* the import
+  had committed. A pubkey whose address *another* account already holds is now
+  left alone. One the importing account itself holds is still registered, which
+  upgrades a row imported by address alone -- as `zallet import-address` creates
+  -- with its public key, and exposes it.
 
 ## [0.1.0-beta.3] - 2026-08-24
 

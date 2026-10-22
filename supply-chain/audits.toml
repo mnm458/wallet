@@ -500,6 +500,17 @@ criteria = "safe-to-deploy"
 delta = "0.1.25 -> 0.1.26"
 notes = "Parser changes use existing parsing machinery in an obvious way."
 
+[[audits.rustls-webpki]]
+who = "Pacu <pacu@zecdev.org>"
+criteria = "safe-to-deploy"
+delta = "0.103.13 -> 0.103.16"
+notes = """
+Adds explicit SPKI distrust for the compromised eMudhra intermediates and tests
+the path-building behavior. The remaining production changes update AWS-LC-RS
+algorithm exposure and simplify CRL iteration. No unsafe code or new ambient
+capabilities are introduced.
+"""
+
 [[audits.rustversion]]
 who = "Jack Grigg <jack@electriccoin.co>"
 criteria = "safe-to-deploy"
