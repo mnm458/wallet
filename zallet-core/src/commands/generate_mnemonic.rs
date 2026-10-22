@@ -24,7 +24,7 @@ impl AsyncRunnable for GenerateMnemonicCmd {
 
         // Adapted from `Mnemonic::generate` so we can use the OS RNG directly.
         const BITS_PER_BYTE: usize = 8;
-        const MAX_ENTROPY_BITS: usize = Count::Words24.entropy_bits();
+        const MAX_ENTROPY_BITS: usize = Count::Words24.entropy_bit_length();
         const ENTROPY_BYTES: usize = MAX_ENTROPY_BITS / BITS_PER_BYTE;
 
         let mut entropy = [0u8; ENTROPY_BYTES];

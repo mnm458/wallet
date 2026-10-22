@@ -36,10 +36,11 @@ be considered breaking changes.
   fails loudly rather than running forever if sustained wallet writes keep
   the copy from completing. Scheduled periodic backups from inside the
   running process remain tracked in #195.
-- NU7 support in ordinary builds. Zallet follows the NU7 activation on
-  Testnet (height 4,465,026), and `regtest_nuparams` accepts the NU7 consensus
-  branch ID without building with `--cfg zcash_unstable="nu7"`. NU7 has no
-  Mainnet activation height yet.
+- NU7 support in ordinary builds. Zallet follows the NU7 network upgrade on
+  Mainnet (height 3,543,405) and Testnet (height 4,465,026), and
+  `regtest_nuparams` accepts the NU7 consensus branch ID without building with
+  `--cfg zcash_unstable="nu7"`. Upgrade before Mainnet reaches the activation
+  height, together with a `zebrad` that also follows NU7.
 
 ### Changed
 
@@ -49,6 +50,12 @@ be considered breaking changes.
   component, one carrying metadata such as an expiry, or a viewing key with a
   P2SH item — is given in its Revision 2 form (`zu…`/`tu…`, `uvf…`, `uvi…`)
   instead. Both revisions are accepted as input.
+- `z_sendmany` rejects a Sprout recipient address with
+  `RPC_INVALID_PARAMETER` ("Sending funds into the Sprout pool is no longer
+  supported."), as `zcashd` did, when it builds the payment request.
+- `z_sendmany` fails for a recipient unified address that has expired, or whose
+  ZIP 316 Revision 2 expiry height is earlier than the expiry height of the
+  transaction that would pay it.
 
 ### Deprecated
 

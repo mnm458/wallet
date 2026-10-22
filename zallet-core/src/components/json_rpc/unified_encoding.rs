@@ -24,7 +24,7 @@ use {
 ///
 /// A transparent receiver is retained, as in `zcashd`'s Revision 0 addresses.
 pub(super) fn encode_unified_address(ua: &UnifiedAddress, params: &impl Parameters) -> String {
-    ua.encode_receiver_preserving(params)
+    ua.encode(params)
 }
 
 /// Encodes a unified full viewing key.
@@ -56,15 +56,13 @@ fn encoding_error(e: UnifiedEncodingError) -> jsonrpsee::types::ErrorObjectOwned
 
 #[cfg(test)]
 mod tests {
+    use zcash_address::constants as address_constants;
     use zcash_address::unified::{self, Container, Encoding, Revision};
     use zcash_keys::{
         address::UnifiedAddress,
         keys::{UnifiedAddressRequest, UnifiedFullViewingKey, UnifiedSpendingKey},
     };
-    use zcash_protocol::{
-        consensus::{BlockHeight, MAIN_NETWORK, NetworkType, TEST_NETWORK},
-        constants,
-    };
+    use zcash_protocol::consensus::{BlockHeight, MAIN_NETWORK, NetworkType, TEST_NETWORK};
 
     use super::encode_unified_address;
     #[cfg(zallet_build = "wallet")]
@@ -96,7 +94,7 @@ mod tests {
         assert!(ua.transparent().is_some() && ua.orchard().is_some());
 
         let encoded = encode_unified_address(&ua, &MAIN_NETWORK);
-        assert!(encoded.starts_with(&hrp_prefix(constants::mainnet::HRP_UNIFIED_ADDRESS)));
+        assert!(encoded.starts_with(&hrp_prefix(address_constants::mainnet::HRP_UNIFIED_ADDRESS)));
 
         let (network, revision, decoded) =
             unified::Address::decode(&encoded).expect("the encoding decodes");
@@ -105,7 +103,7 @@ mod tests {
         assert_eq!(decoded.items().len(), ua.receiver_types().len());
 
         let testnet = encode_unified_address(&ua, &TEST_NETWORK);
-        assert!(testnet.starts_with(&hrp_prefix(constants::testnet::HRP_UNIFIED_ADDRESS)));
+        assert!(testnet.starts_with(&hrp_prefix(address_constants::testnet::HRP_UNIFIED_ADDRESS)));
     }
 
     #[test]
@@ -130,7 +128,7 @@ mod tests {
     fn ufvk_is_revision_0_and_round_trips() {
         let ufvk = test_ufvk();
         let encoded = encode_ufvk(&ufvk, &MAIN_NETWORK).expect("the test UFVK has an encoding");
-        assert!(encoded.starts_with(&hrp_prefix(constants::mainnet::HRP_UNIFIED_FVK)));
+        assert!(encoded.starts_with(&hrp_prefix(address_constants::mainnet::HRP_UNIFIED_FVK)));
 
         let decoded = UnifiedFullViewingKey::decode(&MAIN_NETWORK, &encoded)
             .expect("the Revision 0 encoding decodes");
@@ -142,7 +140,7 @@ mod tests {
         );
 
         let testnet = encode_ufvk(&ufvk, &TEST_NETWORK).expect("the test UFVK has an encoding");
-        assert!(testnet.starts_with(&hrp_prefix(constants::testnet::HRP_UNIFIED_FVK)));
+        assert!(testnet.starts_with(&hrp_prefix(address_constants::testnet::HRP_UNIFIED_FVK)));
     }
 
     #[cfg(zallet_build = "wallet")]
@@ -150,12 +148,12 @@ mod tests {
     fn uivk_is_revision_0_and_round_trips() {
         let uivk = test_ufvk().to_unified_incoming_viewing_key();
         let encoded = encode_uivk(&uivk, &MAIN_NETWORK).expect("the test UIVK has an encoding");
-        assert!(encoded.starts_with(&hrp_prefix(constants::mainnet::HRP_UNIFIED_IVK)));
+        assert!(encoded.starts_with(&hrp_prefix(address_constants::mainnet::HRP_UNIFIED_IVK)));
 
         let (_, revision, _) = unified::Uivk::decode(&encoded).expect("the encoding decodes");
         assert_eq!(revision, Revision::R0);
 
         let testnet = encode_uivk(&uivk, &TEST_NETWORK).expect("the test UIVK has an encoding");
-        assert!(testnet.starts_with(&hrp_prefix(constants::testnet::HRP_UNIFIED_IVK)));
+        assert!(testnet.starts_with(&hrp_prefix(address_constants::testnet::HRP_UNIFIED_IVK)));
     }
 }

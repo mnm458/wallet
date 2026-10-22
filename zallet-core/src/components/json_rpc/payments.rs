@@ -119,6 +119,9 @@ pub(super) fn build_request(amounts: &[AmountParameter]) -> RpcResult<Transactio
                 zcash_client_backend::zip321::PaymentError::ZeroValuedTransparentOutput => {
                     "Cannot send zero-valued output to transparent recipient"
                 }
+                zcash_client_backend::zip321::PaymentError::SproutAddress => {
+                    "Sending funds into the Sprout pool is no longer supported."
+                }
             })
         })?;
 
@@ -1831,6 +1834,9 @@ mod build_request_tests {
 
     use proptest::prelude::*;
 
+    use zcash_address::ToAddress;
+    use zcash_protocol::consensus::NetworkType;
+
     use super::arb::*;
     use super::*;
     use crate::components::json_rpc::utils::zec_str;
@@ -1949,6 +1955,23 @@ mod build_request_tests {
             let request = build_request(&amounts)
                 .expect("a batch of distinct mixed-protocol recipients should build a request");
             prop_assert_eq!(request.payments().len(), pool_indices.len());
+        }
+
+        /// A Sprout recipient is rejected as an invalid parameter, as in `zcashd`, on
+        /// every network and for every Sprout payload.
+        #[test]
+        fn rejects_a_sprout_recipient(
+            net in prop_oneof![Just(NetworkType::Main), Just(NetworkType::Test)],
+            payload in prop::array::uniform(any::<u8>()),
+        ) {
+            let sprout = ZcashAddress::from_sprout(net, payload).encode();
+            let err = build_request(&[amount(&sprout, "0.1")])
+                .expect_err("a Sprout recipient should be rejected");
+            prop_assert_eq!(
+                err,
+                LegacyCode::InvalidParameter
+                    .with_static("Sending funds into the Sprout pool is no longer supported.")
+            );
         }
     }
 }

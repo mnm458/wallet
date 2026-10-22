@@ -7,7 +7,7 @@ use zcash_client_backend::data_api::{Account, WalletRead};
 use zcash_keys::{
     address::Address, encoding::encode_extended_full_viewing_key, keys::UnifiedSpendingKey,
 };
-use zcash_protocol::consensus::NetworkConstants;
+use zcash_protocol::consensus::Parameters;
 
 use crate::components::{
     database::DbConnection,
@@ -145,7 +145,9 @@ pub(crate) async fn call(
             #[allow(deprecated)]
             let extfvk = usk.sapling().to_extended_full_viewing_key();
 
-            let hrp = wallet.params().hrp_sapling_extended_full_viewing_key();
+            let hrp = zcash_keys::constants::hrp_sapling_extended_full_viewing_key(
+                wallet.params().network_type(),
+            );
             Ok(ResultType(encode_extended_full_viewing_key(hrp, &extfvk)))
         }
         _ => Err(LegacyCode::InvalidAddressOrKey
@@ -156,6 +158,8 @@ pub(crate) async fn call(
 #[cfg(test)]
 mod tests {
     use crate::components::json_rpc::unified_encoding::{encode_ufvk, encode_uivk};
+    use zcash_address::constants as address_constants;
+    use zcash_keys::constants as key_constants;
     use zcash_keys::{
         encoding::{
             decode_extended_full_viewing_key, encode_extended_full_viewing_key,
@@ -163,10 +167,7 @@ mod tests {
         },
         keys::UnifiedFullViewingKey,
     };
-    use zcash_protocol::{
-        consensus::{MAIN_NETWORK, TEST_NETWORK},
-        constants,
-    };
+    use zcash_protocol::consensus::{MAIN_NETWORK, TEST_NETWORK};
 
     /// Constructs a UFVK (with only a Sapling component) from seed `[0; 32]`.
     fn test_ufvk() -> UnifiedFullViewingKey {
@@ -194,17 +195,17 @@ mod tests {
     #[test]
     fn encoded_efvk_is_valid_bech32() {
         let (encoded, _) = test_efvk_and_address(
-            constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
-            constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
+            key_constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
+            address_constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
         );
         assert!(encoded.starts_with("zxviews"));
     }
 
     #[test]
     fn encoded_efvk_round_trips() {
-        let hrp = constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
+        let hrp = key_constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
         let (encoded, _) =
-            test_efvk_and_address(hrp, constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS);
+            test_efvk_and_address(hrp, address_constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS);
         let decoded = decode_extended_full_viewing_key(hrp, &encoded).unwrap();
         let re_encoded = encode_extended_full_viewing_key(hrp, &decoded);
         assert_eq!(encoded, re_encoded);
@@ -212,8 +213,8 @@ mod tests {
 
     #[test]
     fn efvk_produces_consistent_default_address() {
-        let hrp_fvk = constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
-        let hrp_addr = constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS;
+        let hrp_fvk = key_constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
+        let hrp_addr = address_constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS;
 
         let (_, addr1) = test_efvk_and_address(hrp_fvk, hrp_addr);
         let (_, addr2) = test_efvk_and_address(hrp_fvk, hrp_addr);
@@ -223,8 +224,8 @@ mod tests {
     #[test]
     fn mainnet_address_starts_with_zs() {
         let (_, addr) = test_efvk_and_address(
-            constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
-            constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
+            key_constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
+            address_constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
         );
         assert!(addr.starts_with("zs"));
     }
@@ -232,17 +233,17 @@ mod tests {
     #[test]
     fn testnet_efvk_has_correct_hrp() {
         let (encoded, _) = test_efvk_and_address(
-            constants::testnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
-            constants::testnet::HRP_SAPLING_PAYMENT_ADDRESS,
+            key_constants::testnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY,
+            address_constants::testnet::HRP_SAPLING_PAYMENT_ADDRESS,
         );
         assert!(encoded.starts_with("zxviewtestsapling"));
     }
 
     #[test]
     fn testnet_efvk_round_trips() {
-        let hrp = constants::testnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
+        let hrp = key_constants::testnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
         let (encoded, _) =
-            test_efvk_and_address(hrp, constants::testnet::HRP_SAPLING_PAYMENT_ADDRESS);
+            test_efvk_and_address(hrp, address_constants::testnet::HRP_SAPLING_PAYMENT_ADDRESS);
         let decoded = decode_extended_full_viewing_key(hrp, &encoded).unwrap();
         let re_encoded = encode_extended_full_viewing_key(hrp, &decoded);
         assert_eq!(encoded, re_encoded);
@@ -250,7 +251,7 @@ mod tests {
 
     #[test]
     fn different_seeds_produce_different_efvks() {
-        let hrp = constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
+        let hrp = key_constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
 
         let extsk_a = sapling::zip32::ExtendedSpendingKey::master(&[0; 32])
             .expect("the test seed derives a valid master key");
@@ -271,12 +272,12 @@ mod tests {
         assert!(
             encode_ufvk(&ufvk, &MAIN_NETWORK)
                 .expect("the test UFVK has an encoding")
-                .starts_with(&format!("{}1", constants::mainnet::HRP_UNIFIED_FVK))
+                .starts_with(&format!("{}1", address_constants::mainnet::HRP_UNIFIED_FVK))
         );
         assert!(
             encode_ufvk(&ufvk, &TEST_NETWORK)
                 .expect("the test UFVK has an encoding")
-                .starts_with(&format!("{}1", constants::testnet::HRP_UNIFIED_FVK))
+                .starts_with(&format!("{}1", address_constants::testnet::HRP_UNIFIED_FVK))
         );
     }
 
@@ -301,12 +302,12 @@ mod tests {
         assert!(
             encode_uivk(&uivk, &MAIN_NETWORK)
                 .expect("the test UIVK has an encoding")
-                .starts_with(&format!("{}1", constants::mainnet::HRP_UNIFIED_IVK))
+                .starts_with(&format!("{}1", address_constants::mainnet::HRP_UNIFIED_IVK))
         );
         assert!(
             encode_uivk(&uivk, &TEST_NETWORK)
                 .expect("the test UIVK has an encoding")
-                .starts_with(&format!("{}1", constants::testnet::HRP_UNIFIED_IVK))
+                .starts_with(&format!("{}1", address_constants::testnet::HRP_UNIFIED_IVK))
         );
     }
 
@@ -321,8 +322,8 @@ mod tests {
     #[test]
     fn efvk_default_address_matches_import_flow() {
         // Exported EFVK, decoded back, should produce the same default address.
-        let hrp_fvk = constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
-        let hrp_addr = constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS;
+        let hrp_fvk = key_constants::mainnet::HRP_SAPLING_EXTENDED_FULL_VIEWING_KEY;
+        let hrp_addr = address_constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS;
 
         let (encoded_fvk, original_addr) = test_efvk_and_address(hrp_fvk, hrp_addr);
 

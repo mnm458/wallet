@@ -22,14 +22,14 @@ should be considered breaking changes.
 
 ### Changed
 
-- Now built against the Zebra 7 crates — `zebra-state` 15 (with the `indexer`
-  feature), `zebra-rpc` 18 and `zebra-chain` 14 — up from `zebra-state` 12 and
-  `zebra-rpc` 15. They are taken from a Zebra commit that builds against
-  `zcash_primitives` 0.31.0-pre.1, because the released crates require
-  0.31.0-pre.0; that commit does not change the on-disk state format.
+- Now built against the Zebra 7.0.0 crates — `zebra-state` 16 (with the
+  `indexer` feature), `zebra-rpc` 19 and `zebra-chain` 15 — up from
+  `zebra-state` 12 and `zebra-rpc` 15.
 
   This backend now requires the on-disk state format **v29.0.0**, so the
-  `zebrad` writing the cache must be Zebra 7.0.0 or later. Upgrade `zebrad` and
+  `zebrad` writing the cache must be Zebra 7.0.0 or later. Zebra 7.0.0-rc.0
+  also writes v29 but does not follow NU7 on Mainnet, so run 7.0.0 or later
+  before Mainnet reaches the NU7 activation height. Upgrade `zebrad` and
   `zallet-zebra` together: `zebrad` 7 moves an existing v28 cache to v29
   automatically on first start, without a resync, and this backend cannot read
   a v28 cache. Keep a backup of the v28 cache if you may need to roll back. As

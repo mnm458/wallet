@@ -12,10 +12,10 @@ use transparent::{address::TransparentAddress, bundle::OutPoint, keys::Transpare
 use zcash_client_backend::{
     address::UnifiedAddress,
     data_api::{
-        AccountBirthday, AccountMeta, AddressInfo, Balance, CoinbaseFilter, DecryptedTransaction,
-        InputSource, NoteFilter, ORCHARD_SHARD_HEIGHT, OutputLockStore, ReceivedNotes,
-        ReceivedTransactionOutput, SAPLING_SHARD_HEIGHT, TargetValue, TransparentKeyOrigin,
-        WalletCommitmentTrees, WalletRead, WalletWrite, Zip32Derivation,
+        AccountBirthday, AccountMeta, AddressInfo, Balance, ChangeReceivers, CoinbaseFilter,
+        DecryptedTransaction, InputSource, NoteFilter, ORCHARD_SHARD_HEIGHT, OutputLockStore,
+        ReceivedNotes, ReceivedTransactionOutput, SAPLING_SHARD_HEIGHT, TargetValue,
+        TransparentKeyOrigin, WalletCommitmentTrees, WalletRead, WalletWrite, Zip32Derivation,
         chain::ChainState,
         error::{FindAccountForAddressError, LockError, RewindError},
         scanning::ScanPriority,
@@ -568,6 +568,13 @@ impl InputSource for DbConnection {
         })
     }
 
+    fn get_change_receivers(
+        &self,
+        account: Self::AccountId,
+    ) -> Result<ChangeReceivers, Self::Error> {
+        self.with(|db_data| db_data.get_change_receivers(account))
+    }
+
     fn get_unspent_transparent_output(
         &self,
         outpoint: &OutPoint,
@@ -685,6 +692,14 @@ impl WalletWrite for DbConnection {
         account: <Self as WalletRead>::AccountId,
     ) -> Result<(), <Self as WalletRead>::Error> {
         self.with_mut(|mut db_data| db_data.delete_account(account))
+    }
+
+    fn set_account_name(
+        &mut self,
+        account: <Self as WalletRead>::AccountId,
+        name: &str,
+    ) -> Result<(), <Self as WalletRead>::Error> {
+        self.with_mut(|mut db_data| db_data.set_account_name(account, name))
     }
 
     #[cfg(feature = "transparent-key-import")]
