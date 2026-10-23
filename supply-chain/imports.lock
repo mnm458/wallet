@@ -163,11 +163,11 @@ user-login = "str4d"
 user-name = "Jack Grigg"
 
 [[publisher.pczt]]
-version = "0.10.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.10.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.pinentry]]
 version = "0.8.0"
@@ -197,12 +197,19 @@ user-id = 169181
 user-login = "nuttycom"
 user-name = "Kris Nuttycombe"
 
+[[publisher.schemerz]]
+version = "0.3.0"
+when = "2026-10-15"
+user-id = 169181
+user-login = "nuttycom"
+user-name = "Kris Nuttycombe"
+
 [[publisher.schemerz-rusqlite]]
-version = "0.370.0"
-when = "2025-10-26"
-user-id = 6289
-user-login = "str4d"
-user-name = "Jack Grigg"
+version = "0.371.0"
+when = "2026-10-15"
+user-id = 169181
+user-login = "nuttycom"
+user-name = "Kris Nuttycombe"
 
 [[publisher.shardtree]]
 version = "0.8.0"
@@ -455,25 +462,25 @@ when = "2026-04-17"
 trusted-publisher = "github:bytecodealliance/wit-bindgen"
 
 [[publisher.zcash_address]]
-version = "0.14.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.14.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_client_backend]]
-version = "0.25.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.25.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_client_sqlite]]
-version = "0.23.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.23.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_encoding]]
 version = "0.5.0"
@@ -483,11 +490,11 @@ user-login = "nuttycom"
 user-name = "Kris Nuttycombe"
 
 [[publisher.zcash_keys]]
-version = "0.17.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.17.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_note_encryption]]
 version = "0.5.1"
@@ -497,32 +504,32 @@ user-login = "nuttycom"
 user-name = "Kris Nuttycombe"
 
 [[publisher.zcash_pool_migration]]
-version = "0.2.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.2.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_primitives]]
-version = "0.31.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.31.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_proofs]]
-version = "0.31.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.31.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_protocol]]
-version = "0.11.0-pre.0"
-when = "2026-10-01"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.11.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zcash_script]]
 version = "0.6.0"
@@ -539,11 +546,11 @@ user-login = "daira"
 user-name = "Daira-Emma Hopwood"
 
 [[publisher.zcash_transparent]]
-version = "0.11.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.11.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[publisher.zewif]]
 version = "1.0.0-rc.3"
@@ -560,11 +567,11 @@ user-login = "nuttycom"
 user-name = "Kris Nuttycombe"
 
 [[publisher.zip321]]
-version = "0.10.0-pre.1"
-when = "2026-10-06"
-user-id = 169181
-user-login = "nuttycom"
-user-name = "Kris Nuttycombe"
+version = "0.10.0"
+when = "2026-10-21"
+user-id = 6289
+user-login = "str4d"
+user-name = "Jack Grigg"
 
 [[audits.bytecode-alliance.wildcard-audits.bumpalo]]
 who = "Nick Fitzgerald <fitzgen@gmail.com>"

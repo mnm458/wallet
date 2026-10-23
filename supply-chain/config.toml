@@ -1196,10 +1196,6 @@ criteria = "safe-to-deploy"
 version = "1.2.1"
 criteria = "safe-to-deploy"
 
-[[exemptions.schemerz]]
-version = "0.2.0"
-criteria = "safe-to-deploy"
-
 [[exemptions.scopeguard]]
 version = "1.2.0"
 criteria = "safe-to-deploy"
@@ -1641,5 +1637,5 @@ version = "0.11.3"
 criteria = "safe-to-deploy"
 
 [[exemptions.zewif-zcashd]]
-version = "0.1.0-rc.5@git:26d8045ce28d98b36dba8da815d45dee5ca5a90f"
+version = "0.1.0-rc.5@git:a369b2e66243b37cea068fcb849c87d9155ac72e"
 criteria = "safe-to-deploy"
