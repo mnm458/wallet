@@ -179,7 +179,7 @@ debug = "line-tables-only"
 
 
 [patch.crates-io]
-# TEMPORARY: take zewif-zcashd on the released NU7 librustzcash cohort
-# (zcash/zewif-zcashd#40) until it is merged and released. Every workspace must
-# carry the same revision.
-zewif-zcashd = { git = "https://github.com/zcash/zewif-zcashd.git", rev = "86537b92b9757fff6696ae5281c8ed74338af167" }
+# TEMPORARY: take zewif-zcashd from its `main`, which moves it to the released
+# NU7 librustzcash cohort (zcash/zewif-zcashd#40), until that is released.
+# Every workspace must carry the same revision.
+zewif-zcashd = { git = "https://github.com/zcash/zewif-zcashd.git", rev = "a369b2e66243b37cea068fcb849c87d9155ac72e" }
