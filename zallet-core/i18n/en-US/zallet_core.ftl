@@ -62,7 +62,11 @@ cmd-generate-encryption-identity-exists = An encryption identity already exists 
 cmd-generate-encryption-identity-post-publication =
     The encryption identity at {$path} was written and published, but a step after
     publishing it failed: {$error}. The identity itself is complete; do not delete
-    it. A temporary twin file may remain beside it and can be removed.
+    it.
+cmd-generate-encryption-identity-post-publication-twin =
+    The encryption identity at {$path} was written and published, but its temporary
+    twin at {$twin} could not be removed: {$error}. The identity itself is complete;
+    do not delete it. The twin holds the same key material and should be deleted.
 cmd-generate-encryption-identity-passphrase-prompt = Enter passphrase to encrypt the identity:
 cmd-generate-encryption-identity-passphrase-confirm = Confirm passphrase:
 cmd-generate-encryption-identity-passphrase-mismatch = Passphrases do not match

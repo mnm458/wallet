@@ -16,7 +16,7 @@ use crate::{
     commands::AsyncRunnable,
     error::{Error, ErrorKind},
     fl,
-    fs::{Publish, PublishError, publish_private_file, temp_path},
+    fs::{Publish, PublishError, publish_private_file},
     prelude::*,
 };
 
@@ -226,34 +226,40 @@ fn copy_database(source: &Path, destination: &Path, limits: &CopyLimits) -> Resu
         |tmp| copy_into(source, tmp, limits),
     )
     .map_err(|e| match e {
-        PublishError::Create(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+        PublishError::Create { temp, source }
+            if source.kind() == std::io::ErrorKind::AlreadyExists =>
+        {
             ErrorKind::Generic
                 .context(fl!(
                     "err-backup-partial-in-the-way",
-                    path = tmp_path(destination).display().to_string(),
+                    path = temp.display().to_string(),
                 ))
                 .into()
         }
-        PublishError::Create(e) => {
+        PublishError::Create { temp, source } => {
             // The raw I/O error names neither the operation nor the file.
             ErrorKind::Generic
                 .context(fl!(
                     "err-backup-cannot-create",
-                    path = tmp_path(destination).display().to_string(),
-                    error = e.to_string(),
+                    path = temp.display().to_string(),
+                    error = source.to_string(),
                 ))
                 .into()
         }
         PublishError::Fill(e) => e,
         PublishError::DestinationExists => destination_exists_error(destination),
         PublishError::Publish(e) => ErrorKind::Generic.context(e).into(),
-        PublishError::PostPublish(e) => published_backup_error(destination, e),
+        PublishError::PostPublish { source, .. } => published_backup_error(destination, source),
     })
 }
 
 /// The in-progress file the backup is written to before it is published.
+///
+/// Production code receives this path inside [`PublishError`]; only tests
+/// derive it independently.
+#[cfg(test)]
 fn tmp_path(destination: &Path) -> PathBuf {
-    temp_path(destination, PARTIAL_SUFFIX)
+    crate::fs::temp_path(destination, PARTIAL_SUFFIX)
 }
 
 /// Maps a SQLite error from the copy to an operator-actionable Zallet error.
@@ -366,6 +372,11 @@ fn copy_into(source: &Path, tmp: &Path, limits: &CopyLimits) -> Result<u64, Erro
             .context(fl!("err-backup-integrity", detail = ok))
             .into());
     }
+
+    // The publisher syncs and renames the temporary by path, which fails on
+    // Windows while any handle is open, so the connection must be closed
+    // before this fill returns.
+    drop(dst);
 
     Ok(pages)
 }

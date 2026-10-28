@@ -15,11 +15,10 @@ previous good backup.
 
 The backup is written to a temporary file first and only published after it has passed a
 database integrity check and been synced to disk, and publication never replaces an
-existing file, even one that appeared while the copy was running. (On Unix filesystems
-without hard-link support, such as FAT and exFAT, that refusal is a checked fallback
-rather than an atomic operation; prefer a destination filesystem with hard links when
-anything else might write to the same path. On Windows the refusal is atomic on every
-filesystem.) If this command reports
+existing file, even one that appeared while the copy was running. The refusal is atomic
+on Windows on every filesystem, and on Linux, Android, and Apple platforms wherever the
+filesystem supports no-replace renames (on Linux that includes FAT and exFAT) or hard
+links; only when neither is available does it degrade to a checked fallback. If this command reports
 success, the file at `DESTINATION` is a complete, verified backup; if it reports failure,
 no partial file is left behind. The one exception is a backup interrupted from outside
 (a kill signal or power loss), which can leave the in-progress `<DESTINATION>.partial`
@@ -29,9 +28,9 @@ says where it is so it can be deleted once no backup is running.
 The backup file is created owner-only from the moment it exists, on Unix (mode `0600`)
 and on Windows (a protected owner-only ACL); on any other platform it inherits the
 destination directory's access control, so write backups into a directory only your
-user can read. One guarantee is narrower off Unix: the published file's directory entry
-is made crash-durable (by syncing the containing directory) on Unix only; elsewhere its
-durability immediately after success is left to the operating system.
+user can read. The published file's directory entry is made crash-durable on Unix (by
+syncing the containing directory) and on Windows (a write-through rename); on any other
+platform its durability immediately after success is left to the operating system.
 
 The command works whether or not the wallet is running. Backing up a *running* wallet
 never mutates it and never blocks its writes for more than one copy step at a time, and

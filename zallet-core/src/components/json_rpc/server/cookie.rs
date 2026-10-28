@@ -62,10 +62,10 @@ pub(crate) fn generate_cookie(
         cookie.as_bytes(),
     )
     .map_err(|e| match e {
-        PublishError::Create(e)
-        | PublishError::Fill(e)
-        | PublishError::Publish(e)
-        | PublishError::PostPublish(e) => ErrorKind::Init.context(e),
+        PublishError::Create { source, .. } | PublishError::PostPublish { source, .. } => {
+            ErrorKind::Init.context(source)
+        }
+        PublishError::Fill(e) | PublishError::Publish(e) => ErrorKind::Init.context(e),
         // Replacing mode never refuses an existing destination; map it like any
         // other publication failure rather than asserting on it.
         PublishError::DestinationExists => {

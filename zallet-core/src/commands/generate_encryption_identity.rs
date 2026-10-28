@@ -126,17 +126,32 @@ fn write_identity_file(path: &Path, body: &[u8]) -> Result<(), Error> {
             .into(),
         // A failure after the identity is already visible at `path` must not
         // read as "nothing was written": a retry would be refused, and the
-        // generic message would invite deleting a complete identity.
-        PublishError::PostPublish(e) => ErrorKind::Init
+        // generic message would invite deleting a complete identity. When a
+        // temporary twin (holding the same key material) remains, name it so
+        // the operator can remove exactly that file.
+        PublishError::PostPublish {
+            leftover_temp: Some(twin),
+            source,
+        } => ErrorKind::Init
+            .context(fl!(
+                "cmd-generate-encryption-identity-post-publication-twin",
+                path = path.display().to_string(),
+                twin = twin.display().to_string(),
+                error = source.to_string(),
+            ))
+            .into(),
+        PublishError::PostPublish {
+            leftover_temp: None,
+            source,
+        } => ErrorKind::Init
             .context(fl!(
                 "cmd-generate-encryption-identity-post-publication",
                 path = path.display().to_string(),
-                error = e.to_string(),
+                error = source.to_string(),
             ))
             .into(),
-        PublishError::Create(e) | PublishError::Fill(e) | PublishError::Publish(e) => {
-            write_failed(path, e)
-        }
+        PublishError::Create { source, .. } => write_failed(path, source),
+        PublishError::Fill(e) | PublishError::Publish(e) => write_failed(path, e),
     })
 }
 
