@@ -12,7 +12,7 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-use rand::{Rng, rngs::OsRng};
+use rand::{RngExt, rand_core::UnwrapErr, rngs::SysRng};
 
 /// Creates a new file that is readable and writable only by the user the Zallet
 /// process runs as.
@@ -440,7 +440,7 @@ fn prepare_temp_path(destination: &Path, mode: &Publish) -> Result<PathBuf, (Pat
         }
         Publish::NoClobber { temp_suffix } => Ok(temp_path(destination, temp_suffix)),
         Publish::NoClobberStrict => {
-            let token: u64 = OsRng.r#gen();
+            let token: u64 = UnwrapErr(SysRng).random();
             Ok(temp_path(destination, &format!(".{token:016x}.tmp")))
         }
     }
