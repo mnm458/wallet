@@ -88,5 +88,4 @@ zewif-zcashd = { git = "https://github.com/zcash/zewif-zcashd.git", rev = "a369b
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(tokio_unstable)',
     'cfg(zallet_build, values("merchant_terminal", "wallet"))',
-    'cfg(zcash_unstable, values("nu7"))',
 ] }
