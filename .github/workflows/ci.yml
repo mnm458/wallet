@@ -126,7 +126,6 @@ jobs:
           - Windows
         state:
           - default
-          - NU7
 
         include:
           - target: macOS
@@ -135,18 +134,9 @@ jobs:
             os: windows-latest
 
           - target: Linux
-            state: NU7
-            os: ubuntu-latest
-            rustflags: '--cfg zcash_unstable="nu7"'
-
-          - target: Linux
             state: merchant_terminal
             os: ubuntu-latest
             rustflags: '--cfg zallet_build="merchant_terminal"'
-
-        exclude:
-          - target: macOS
-            state: NU7
 
     env:
       RUSTFLAGS: ${{ matrix.rustflags }}
@@ -156,7 +146,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      # Cross-platform / NU7 / merchant_terminal coverage tracks zallet-core; the
+      # Cross-platform / merchant_terminal coverage tracks zallet-core; the
       # `zebra-state` backend is Linux-only and covered by `test-msrv-required`.
       - name: Run tests (zallet-core)
         run: >
