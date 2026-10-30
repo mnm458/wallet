@@ -3,6 +3,11 @@
 > WARNING: This process is currently unstable, very manual, and subject to change as we
 > make Zallet easier to use.
 
+> **Migrating from `zcashd`?** Follow [Migrating from `zcashd`](../zcashd/README.md)
+> instead of this page. It covers the same setup in the right order for an existing
+> wallet; in particular, do **not** generate a new mnemonic (below) for a wallet you
+> intend to import.
+
 ## Create a config file
 
 Zallet by default uses `$HOME/.zallet` as its data directory. You can override
@@ -118,13 +123,18 @@ Notes:
 - zebrad's on-disk state format must match Zallet's `zebra-state` version; a
   mismatch fails fast with a "no zebra-state v… database found" error rather than
   silently creating an empty database.
+- Zallet reads the state format written by Zebra 7.0.0 and later, and follows the
+  NU7 network upgrade on Mainnet (height 3,543,405) and Testnet (height 4,465,026).
+  Upgrade Zallet and `zebrad` to releases that follow NU7 before the network you run
+  on reaches its activation height. Zebra 7.0.0-rc.0 follows NU7 on Testnet but not
+  on Mainnet.
 - Regtest is supported: the backend builds a Zebra Regtest network from the wallet's
   configured `regtest_nuparams`, so it interprets zebrad's state under matching
   consensus rules.
 
 If you have an existing `zcash.conf`, you can use it as a starting point:
 ```
-$ zallet migrate-zcash-conf --datadir /path/to/zcashd/datadir -o /path/to/zallet/datadir/zallet.toml
+$ zallet migrate-zcash-conf --zcashd-datadir /path/to/zcashd/datadir -o /path/to/zallet/datadir/zallet.toml
 ```
 
 > [Reference](../cli/migrate-zcash-conf.md)
@@ -166,6 +176,11 @@ $ zallet -d /path/to/zallet/datadir init-wallet-encryption
 > [Reference](../cli/init-wallet-encryption.md)
 
 ## Generate a mnemonic phrase
+
+Skip this step if you are importing a `zcashd` wallet:
+[`zallet migrate-zcashd-wallet`](../cli/migrate-zcashd-wallet.md) brings the wallet's
+own mnemonic across, and generating one here would add an unrelated second root of
+spend authority.
 
 ```
 $ zallet -d /path/to/zallet/datadir generate-mnemonic
