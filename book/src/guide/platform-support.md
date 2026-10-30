@@ -37,9 +37,8 @@ Artifact details:
   Docker Hub. See [Docker](installation/docker.md).
 
 Building from source on a mainstream glibc Linux distribution is equally supported:
-CI builds and runs the full test suite on x86_64 glibc Linux (including the
-NU7-gated configuration), using the Rust toolchain pinned in
-`rust-toolchain.toml`.
+CI builds and runs the full test suite on x86_64 glibc Linux, using the Rust
+toolchain pinned in `rust-toolchain.toml`.
 
 The `zebra` chain backend (Linux-only, reads a co-located `zebrad`'s state database)
 is supported on Tier 1 platforms. See [Choosing a chain
