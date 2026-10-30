@@ -221,7 +221,9 @@ pub async fn init_read_state_service(
 #[cfg(test)]
 mod tests {
     use zallet_core::network::{Network, RegTestNuParam};
-    use zcash_protocol::consensus::{BranchId, NetworkType};
+    use zcash_protocol::consensus::{
+        BranchId, NetworkType, NetworkUpgrade as WalletUpgrade, Parameters, UPGRADES_IN_ORDER,
+    };
     use zebra_chain::{block::Height, parameters::NetworkUpgrade};
 
     use super::network_to_zebra;
@@ -254,5 +256,38 @@ mod tests {
             activations.get(&Height(NU7_HEIGHT)),
             Some(&NetworkUpgrade::Nu7)
         );
+    }
+
+    /// On Mainnet and Testnet, every network upgrade activates at the same height in the
+    /// wallet's consensus parameters and in the Zebra network the state reader uses, so
+    /// both interpret each block under the same consensus rules.
+    #[test]
+    fn public_network_activation_heights_match_zebra() {
+        for network_type in [NetworkType::Main, NetworkType::Test] {
+            let params = Network::from_type(network_type, &[]);
+            assert!(
+                params.activation_height(WalletUpgrade::Nu7).is_some(),
+                "NU7 is scheduled on {network_type:?}",
+            );
+
+            let zebra_network =
+                network_to_zebra(&params).expect("public networks map to a Zebra network");
+            let wallet_heights: Vec<_> = UPGRADES_IN_ORDER
+                .iter()
+                .map(|&nu| (nu, params.activation_height(nu).map(u32::from)))
+                .collect();
+            let zebra_heights: Vec<_> = UPGRADES_IN_ORDER
+                .iter()
+                .map(|&nu| {
+                    (
+                        nu,
+                        NetworkUpgrade::from(nu)
+                            .activation_height(&zebra_network)
+                            .map(|height| height.0),
+                    )
+                })
+                .collect();
+            assert_eq!(wallet_heights, zebra_heights, "{network_type:?}");
+        }
     }
 }
