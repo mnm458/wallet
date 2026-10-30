@@ -39,8 +39,8 @@ be considered breaking changes.
 - NU7 support in ordinary builds. Zallet follows the NU7 network upgrade on
   Mainnet (height 3,543,405) and Testnet (height 4,465,026), and
   `regtest_nuparams` accepts the NU7 consensus branch ID without building with
-  `--cfg zcash_unstable="nu7"`. Upgrade before Mainnet reaches the activation
-  height, together with a `zebrad` that also follows NU7.
+  `--cfg zcash_unstable="nu7"`. Upgrade before the network you run on reaches
+  its activation height, together with a `zebrad` that also follows NU7.
 
 ### Changed
 

@@ -28,8 +28,9 @@ should be considered breaking changes.
 
   This backend now requires the on-disk state format **v29.0.0**, so the
   `zebrad` writing the cache must be Zebra 7.0.0 or later. Zebra 7.0.0-rc.0
-  also writes v29 but does not follow NU7 on Mainnet, so run 7.0.0 or later
-  before Mainnet reaches the NU7 activation height. Upgrade `zebrad` and
+  also writes v29 and follows NU7 on Testnet (height 4,465,026), but not on
+  Mainnet, so run 7.0.0 or later before Mainnet reaches the NU7 activation
+  height (3,543,405). Upgrade `zebrad` and
   `zallet-zebra` together: `zebrad` 7 moves an existing v28 cache to v29
   automatically on first start, without a resync, and this backend cannot read
   a v28 cache. Keep a backup of the v28 cache if you may need to roll back. As

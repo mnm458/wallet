@@ -123,6 +123,11 @@ Notes:
 - zebrad's on-disk state format must match Zallet's `zebra-state` version; a
   mismatch fails fast with a "no zebra-state v… database found" error rather than
   silently creating an empty database.
+- Zallet reads the state format written by Zebra 7.0.0 and later, and follows the
+  NU7 network upgrade on Mainnet (height 3,543,405) and Testnet (height 4,465,026).
+  Upgrade Zallet and `zebrad` to releases that follow NU7 before the network you run
+  on reaches its activation height. Zebra 7.0.0-rc.0 follows NU7 on Testnet but not
+  on Mainnet.
 - Regtest is supported: the backend builds a Zebra Regtest network from the wallet's
   configured `regtest_nuparams`, so it interprets zebrad's state under matching
   consensus rules.
